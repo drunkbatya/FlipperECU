@@ -1,0 +1,17 @@
+# For details & more options, see documentation/AppManifests.md in firmware repo
+
+App(
+    appid="flipper_ecu",  # Must be unique
+    name="Flipper ECU",  # Displayed in menus
+    apptype=FlipperAppType.EXTERNAL,
+    entry_point="flipper_ecu_app",
+    stack_size=2 * 1024,
+    fap_category="GPIO",
+    # Optional values
+    fap_version="0.1",
+    fap_icon="flipper_ecu.png",  # 10x10 1-bit PNG
+    fap_description="Flipper-base Engine Control Unit",
+    fap_author="Max Andreev (drunkbatya)",
+    fap_weburl="https://github.com/drunkbatya/FlipperECU",
+    fap_icon_assets="images",  # Image assets to compile for this application
+)
