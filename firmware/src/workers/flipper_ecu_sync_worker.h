@@ -9,9 +9,8 @@ typedef struct {
     FuriThread* thread;
     FlipperECUSettings* settings;
     const FlipperECUGPIO* gpio;
-    uint32_t current_tick;
-    uint32_t previous_tick;
-    uint32_t timer;
+    uint32_t current_period;
+    uint32_t previous_period;
     bool synced;
 } FlipperECUSyncWorker;
 

@@ -7,7 +7,7 @@
 #include "flipper_ecu_gpio.h"
 
 typedef struct {
-    FuriThread* gui_thread;
+    FlipperECUGui* gui;
     FlipperECUSyncWorker* sync_worker;
     FlipperECUSettings* settings;
     const FlipperECUGPIO* gpio;

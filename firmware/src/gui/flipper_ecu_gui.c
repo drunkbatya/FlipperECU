@@ -1,5 +1,6 @@
 #include "flipper_ecu_gui_i.h"
 
+#define TAG "FlipperECUGui"
 #define FLIPPER_ECU_GUI_TICK 250
 
 static bool flipper_ecu_gui_custom_event_callback(void* context, uint32_t event) {
@@ -20,8 +21,18 @@ static void flipper_ecu_gui_tick_event_callback(void* context) {
     scene_manager_handle_tick_event(app->scene_manager);
 }
 
-static FlipperECUGui* flipper_ecu_gui_alloc() {
+static int32_t flipper_ecu_gui_thread(void* arg) {
+    FlipperECUGui* app = arg;
+    FURI_LOG_I(TAG, "thread started");
+    view_dispatcher_run(app->view_dispatcher);
+    FURI_LOG_I(TAG, "thread stopped");
+    return 0;
+}
+
+FlipperECUGui* flipper_ecu_gui_alloc(void* main_app) {
     FlipperECUGui* app = malloc(sizeof(FlipperECUGui));
+    FlipperECUApp* ecu_app = main_app;
+    app->thread = furi_thread_alloc_ex(TAG, 1024, flipper_ecu_gui_thread, app);
 
     app->gui = furi_record_open(RECORD_GUI);
     app->scene_manager = scene_manager_alloc(&flipper_ecu_scene_handlers, app);
@@ -52,10 +63,12 @@ static FlipperECUGui* flipper_ecu_gui_alloc() {
         flipper_ecu_view_dashboard_get_view(app->view_dashboard));
     scene_manager_next_scene(app->scene_manager, FlipperECUSceneStart);
 
+    app->ecu_app = ecu_app;
+
     return app;
 }
 
-static void flipper_ecu_gui_free(FlipperECUGui* app) {
+void flipper_ecu_gui_free(FlipperECUGui* app) {
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewDashboard);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewSubmenu);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewWidget);
@@ -66,15 +79,16 @@ static void flipper_ecu_gui_free(FlipperECUGui* app) {
 
     view_dispatcher_free(app->view_dispatcher);
     scene_manager_free(app->scene_manager);
+    furi_thread_free(app->thread);
 
     furi_record_close(RECORD_GUI);
     free(app);
 }
 
-int32_t flipper_ecu_gui_thread(void* arg) {
-    FlipperECUGui* app = flipper_ecu_gui_alloc();
-    app->ecu_app = arg;
-    view_dispatcher_run(app->view_dispatcher);
-    flipper_ecu_gui_free(app);
-    return 0;
+void flipper_ecu_gui_start(FlipperECUGui* app) {
+    furi_thread_start(app->thread);
+}
+
+void flipper_ecu_gui_await_stop(FlipperECUGui* app) {
+    furi_thread_join(app->thread);
 }
