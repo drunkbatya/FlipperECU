@@ -1,20 +1,22 @@
 #include "../flipper_ecu_gui_i.h"
 #include "../../workers/flipper_ecu_sync_worker.h"
 
+static void flipper_ecu_scene_dashboard_update_view(FlipperECUGui* app) {
+    uint32_t rpm = flipper_ecu_sync_worker_get_rpm(app->ecu_app->sync_worker);
+    flipper_ecu_view_dashboard_set_rpm(app->view_dashboard, rpm);
+}
+
 void flipper_ecu_scene_dashboard_on_enter(void* context) {
     FlipperECUGui* app = context;
-    FuriString* tmp_string = furi_string_alloc();
-    furi_string_printf(
-        tmp_string, "RPM: %lu", flipper_ecu_sync_worker_get_rpm(app->ecu_app->sync_worker));
-    widget_add_string_element(
-        app->widget, 0, 0, AlignLeft, AlignTop, FontSecondary, furi_string_get_cstr(tmp_string));
-    furi_string_free(tmp_string);
-    view_dispatcher_switch_to_view(app->view_dispatcher, FlipperECUGuiViewWidget);
+    view_dispatcher_switch_to_view(app->view_dispatcher, FlipperECUGuiViewDashboard);
 }
 
 bool flipper_ecu_scene_dashboard_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
+    FlipperECUGui* app = context;
+    if(event.type == SceneManagerEventTypeTick) {
+        flipper_ecu_scene_dashboard_update_view(app);
+        return true;
+    }
     return false;
 }
 

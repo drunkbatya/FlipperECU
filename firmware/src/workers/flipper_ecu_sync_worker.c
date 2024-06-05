@@ -7,13 +7,11 @@
 
 #define TAG "FlipperECUSyncWorker"
 
-static uint32_t timer = 0;
-
 static void flipper_ecu_sync_worker_process_ckp_tick(void* context) {
     FlipperECUSyncWorker* worker = context;
     if(LL_TIM_IsActiveFlag_CC1(TIM2)) {
         LL_TIM_ClearFlag_CC1(TIM2);
-        timer = LL_TIM_IC_GetCaptureCH1(TIM2);
+        worker->timer = LL_TIM_IC_GetCaptureCH1(TIM2);
         LL_TIM_SetCounter(TIM2, 0);
         furi_thread_flags_set(
             furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventCkpPulse);
@@ -34,7 +32,7 @@ static int32_t flipper_ecu_sync_worker_thread(void* arg) {
         }
         if(events & FlipperECUSyncWorkerEventCkpPulse) {
             FURI_LOG_I(TAG, "ckp_tick recived!");
-            furi_string_printf(fstr, "RPS: %lu", (SystemCoreClock / timer));
+            furi_string_printf(fstr, "RPS: %lu", (SystemCoreClock / worker->timer));
             FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
             continue;
         }
@@ -81,6 +79,7 @@ FlipperECUSyncWorker*
     worker->current_tick = 0;
     worker->previous_tick = 0;
     worker->synced = false;
+    worker->timer = 0;
 
     flipper_ecu_sync_worker_ckps_timer_init(worker);
 
@@ -102,6 +101,5 @@ void flipper_ecu_sync_worker_await_stop(FlipperECUSyncWorker* worker) {
 }
 
 uint32_t flipper_ecu_sync_worker_get_rpm(FlipperECUSyncWorker* worker) {
-    UNUSED(worker);
-    return 12;
+    return SystemCoreClock / worker->timer;
 }

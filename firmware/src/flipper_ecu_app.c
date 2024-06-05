@@ -6,17 +6,20 @@ FlipperECUApp* flipper_ecu_app_alloc(void) {
     FlipperECUApp* app = malloc(sizeof(FlipperECUApp));
     app->gpio = flipper_ecu_gpio_init();
     app->settings = flipper_ecu_settings_alloc();
+
     app->gui_thread = furi_thread_alloc_ex("FlipperECUGui", 1024, flipper_ecu_gui_thread, app);
+
     app->sync_worker = flipper_ecu_sync_worker_alloc(app->settings, app->gpio);
     return app;
 }
 
 void flipper_ecu_app_free(FlipperECUApp* app) {
     furi_assert(app);
-    furi_thread_free(app->gui_thread);
     flipper_ecu_sync_worker_free(app->sync_worker);
     flipper_ecu_settings_free(app->settings);
     flipper_ecu_gpio_deinit();
+
+    furi_thread_free(app->gui_thread);
     free(app);
 }
 

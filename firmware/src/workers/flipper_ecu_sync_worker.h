@@ -11,6 +11,7 @@ typedef struct {
     const FlipperECUGPIO* gpio;
     uint32_t current_tick;
     uint32_t previous_tick;
+    uint32_t timer;
     bool synced;
 } FlipperECUSyncWorker;
 

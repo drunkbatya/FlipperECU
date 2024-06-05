@@ -6,6 +6,7 @@
 #include <gui/view_dispatcher.h>
 #include <gui/modules/widget.h>
 #include "scenes/flipper_ecu_scene.h"
+#include "views/flipper_ecu_view_dashboard.h"
 
 #include "../flipper_ecu_app.h"
 
@@ -17,9 +18,11 @@ typedef struct {
     SceneManager* scene_manager;
     Submenu* submenu;
     Widget* widget;
+    FlipperECUDashboardView* view_dashboard;
 } FlipperECUGui;
 
 typedef enum {
     FlipperECUGuiViewSubmenu,
     FlipperECUGuiViewWidget,
+    FlipperECUGuiViewDashboard,
 } FlipperECUGuiView;
