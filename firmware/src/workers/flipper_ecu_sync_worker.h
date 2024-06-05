@@ -9,6 +9,9 @@ typedef struct {
     FuriThread* thread;
     FlipperECUSettings* settings;
     const FlipperECUGPIO* gpio;
+    uint32_t current_tick;
+    uint32_t previous_tick;
+    bool synced;
 } FlipperECUSyncWorker;
 
 typedef enum {
@@ -24,3 +27,4 @@ void flipper_ecu_sync_worker_send_stop(FlipperECUSyncWorker* worker);
 void flipper_ecu_sync_worker_await_stop(FlipperECUSyncWorker* worker);
 void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker);
 void flipper_ecu_sync_worker_free(FlipperECUSyncWorker* worker);
+uint32_t flipper_ecu_sync_worker_get_rpm(FlipperECUSyncWorker* worker);
