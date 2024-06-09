@@ -5,16 +5,30 @@
 #include <furi_hal_interrupt.h>
 #include <stm32wbxx_ll_tim.h>
 
+// debug
+#include <furi_hal_pwm.h>
+
 #define TAG "FlipperECUSyncWorker"
+
+#define CKPS_MISSED_TOOTH 2
 
 static void flipper_ecu_sync_worker_process_ckp_tick(void* context) {
     FlipperECUSyncWorker* worker = context;
     if(LL_TIM_IsActiveFlag_CC1(TIM2)) {
         uint32_t current_period = LL_TIM_IC_GetCaptureCH1(TIM2);
         LL_TIM_ClearFlag_CC1(TIM2);
+        LL_TIM_SetCounter(TIM2, 0);
         worker->previous_period = worker->current_period;
         worker->current_period = current_period;
-        LL_TIM_SetCounter(TIM2, 0);
+        // if current period equals missed teeth count, but not much more
+        if(worker->previous_period != 0 && worker->current_period != 0) {
+            if((worker->current_period >= (worker->previous_period * CKPS_MISSED_TOOTH)) &&
+               (worker->current_period < (worker->previous_period * CKPS_MISSED_TOOTH * 2))) {
+                // add stop timer and disable interrupts
+                worker->synced = true;
+                // make predictions
+            }
+        }
         furi_thread_flags_set(
             furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventCkpPulse);
     }
@@ -46,6 +60,10 @@ static int32_t flipper_ecu_sync_worker_thread(void* arg) {
 void flipper_ecu_sync_worker_send_stop(FlipperECUSyncWorker* worker) {
     LL_TIM_DisableCounter(TIM2);
     furi_hal_interrupt_set_isr(FuriHalInterruptIdTIM2, NULL, NULL);
+
+    if(furi_hal_pwm_is_running(FuriHalPwmOutputIdTim1PA7)) {
+        furi_hal_pwm_stop(FuriHalPwmOutputIdTim1PA7);
+    }
 
     furi_hal_gpio_init_ex(
         &gpio_ext_pa15, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
@@ -100,6 +118,13 @@ FlipperECUSyncWorker*
     worker->previous_period = 0;
 
     flipper_ecu_sync_worker_ckps_timer_init(worker);
+
+    if(!furi_hal_pwm_is_running(FuriHalPwmOutputIdTim1PA7)) {
+        furi_hal_pwm_start(FuriHalPwmOutputIdTim1PA7, 1000, 50);
+    } else {
+        furi_hal_pwm_stop(FuriHalPwmOutputIdTim1PA7);
+        furi_hal_pwm_start(FuriHalPwmOutputIdTim1PA7, 1000, 50);
+    }
 
     return worker;
 }
