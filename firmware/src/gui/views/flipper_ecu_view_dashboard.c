@@ -14,8 +14,12 @@ static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _mode
     FlipperECUDashboardViewModel* view_dashboard_model = _model;
     char temp_str[18];
     canvas_clear(canvas);
-    snprintf(temp_str, 18, "RPM: %lu", view_dashboard_model->rpm);
-    canvas_draw_str(canvas, 10, 10, temp_str);
+    snprintf(temp_str, 18, "Counter: %lu", view_dashboard_model->rpm);
+    canvas_draw_str(canvas, 0, 10, temp_str);
+    snprintf(temp_str, 18, "RPM: %lu", SystemCoreClock / view_dashboard_model->rpm);
+    canvas_draw_str(canvas, 0, 20, temp_str);
+    snprintf(temp_str, 18, "CoreClock: %lu", SystemCoreClock);
+    canvas_draw_str(canvas, 0, 30, temp_str);
 }
 
 static bool flipper_ecu_view_dashboard_input_callback(InputEvent* event, void* _model) {

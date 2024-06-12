@@ -9,16 +9,20 @@ typedef struct {
     FuriThread* thread;
     FlipperECUSettings* settings;
     const FlipperECUGPIO* gpio;
+    uint32_t timer_overflows;
     uint32_t current_period;
     uint32_t previous_period;
+    uint32_t temp;
     bool synced;
 } FlipperECUSyncWorker;
 
 typedef enum {
     FlipperECUSyncWorkerEventStop = (1 << 0),
     FlipperECUSyncWorkerEventCkpPulse = (1 << 1),
+    FlipperECUSyncWorkerEventPredictionDone = (1 << 2),
     FlipperECUSyncWorkerEventAll = FlipperECUSyncWorkerEventStop |
-                                   FlipperECUSyncWorkerEventCkpPulse
+                                   FlipperECUSyncWorkerEventCkpPulse |
+                                   FlipperECUSyncWorkerEventPredictionDone
 } FlipperECUSyncWorkerEvent;
 
 FlipperECUSyncWorker*
