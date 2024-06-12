@@ -78,7 +78,7 @@ static inline void flipper_ecu_sync_worker_process_out_of_sync(FlipperECUSyncWor
     furi_thread_flags_set(furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventCkpPulse);
 }
 
-static void flipper_ecu_sync_worker_timer2_isr(void* context) {
+static void flipper_ecu_sync_worker_cpks_timer_isr(void* context) {
     FlipperECUSyncWorker* worker = context;
     if(LL_TIM_IsActiveFlag_CC1(CKPS_TIMER)) {
         LL_TIM_ClearFlag_CC1(CKPS_TIMER);
@@ -166,7 +166,7 @@ static void flipper_ecu_sync_worker_ckps_timer_init(FlipperECUSyncWorker* worker
     LL_TIM_CC_EnableChannel(CKPS_TIMER, LL_TIM_CHANNEL_CH1);
     LL_TIM_SetCounter(CKPS_TIMER, 0);
 
-    furi_hal_interrupt_set_isr(CKPS_TIMER_ISR_ID, flipper_ecu_sync_worker_timer2_isr, worker);
+    furi_hal_interrupt_set_isr(CKPS_TIMER_ISR_ID, flipper_ecu_sync_worker_cpks_timer_isr, worker);
 
     LL_TIM_EnableCounter(CKPS_TIMER);
 }
@@ -194,7 +194,7 @@ FlipperECUSyncWorker*
     if(furi_hal_pwm_is_running(FuriHalPwmOutputIdLptim2PA4)) {
         furi_hal_pwm_stop(FuriHalPwmOutputIdLptim2PA4);
     }
-    furi_hal_pwm_start(FuriHalPwmOutputIdLptim2PA4, 1100, 50);
+    furi_hal_pwm_start(FuriHalPwmOutputIdLptim2PA4, 60, 50);
 
     return worker;
 }
