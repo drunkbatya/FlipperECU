@@ -1,5 +1,5 @@
 #include "../flipper_ecu_gui_i.h"
-#include "../../workers/flipper_ecu_sync_worker.h"
+#include "../../worker/flipper_ecu_sync_worker.h"
 
 static void flipper_ecu_scene_dashboard_update_view(FlipperECUGui* app) {
     uint32_t rpm = flipper_ecu_sync_worker_get_rpm(app->ecu_app->sync_worker);

@@ -20,6 +20,8 @@ static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _mode
     canvas_draw_str(canvas, 0, 20, temp_str);
     snprintf(temp_str, 18, "CoreClock: %lu", SystemCoreClock);
     canvas_draw_str(canvas, 0, 30, temp_str);
+    snprintf(temp_str, 18, "TickToMs: %lu", SystemCoreClock / (1 * 1000));
+    canvas_draw_str(canvas, 0, 40, temp_str);
 }
 
 static bool flipper_ecu_view_dashboard_input_callback(InputEvent* event, void* _model) {
