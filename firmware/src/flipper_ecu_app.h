@@ -11,7 +11,4 @@ typedef struct {
     FlipperECUSettings* settings;
 } FlipperECUApp;
 
-typedef enum {
-    CKPSPolatityRasing,
-    CKPSPolatityFalling
-} CKPSPolatity;
+typedef enum { CKPSPolatityRasing, CKPSPolatityFalling } CKPSPolatity;

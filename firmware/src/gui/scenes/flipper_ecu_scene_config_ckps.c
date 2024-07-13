@@ -1,6 +1,7 @@
 #include "../flipper_ecu_gui_i.h"
 
-static const char* ckps_polarity[] = {[CKPSPolatityRasing] = "Rasing", [CKPSPolatityFalling] = "Falling"};
+static const char* ckps_polarity[] =
+    {[CKPSPolatityRasing] = "Rasing", [CKPSPolatityFalling] = "Falling"};
 
 static void ckps_polarity_cb(VariableItem* item) {
     FlipperECUGui* app = variable_item_get_context(item);
@@ -20,7 +21,8 @@ void flipper_ecu_scene_config_ckps_on_enter(void* context) {
     variable_item_set_current_value_text(item, ckps_polarity[CKPSPolatityRasing]);
 
     variable_item_list_set_selected_item(
-        app->var_item_list, scene_manager_get_scene_state(app->scene_manager, FlipperECUSceneConfigCKPS));
+        app->var_item_list,
+        scene_manager_get_scene_state(app->scene_manager, FlipperECUSceneConfigCKPS));
 
     view_dispatcher_switch_to_view(app->view_dispatcher, FlipperECUGuiViewVarItemList);
 }

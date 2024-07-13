@@ -98,7 +98,7 @@ static inline void
             worker->previous_period = 0;
             LL_TIM_EnableCounter(CKPS_TIMER);
             LL_TIM_EnableIT_CC1(CKPS_TIMER);
-        } else if (worker->current_period >= (worker->previous_period * 3)) {
+        } else if(worker->current_period >= (worker->previous_period * 3)) {
             worker->ckps_timer_overflows = 0;
             worker->synced = false;
             worker->current_period = 0;
