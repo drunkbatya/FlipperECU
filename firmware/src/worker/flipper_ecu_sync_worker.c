@@ -11,10 +11,12 @@
 
 #define TAG "FlipperECUSyncWorker"
 
-#define GPIO_IGNITION_PIN_1 &gpio_ext_pc0
-#define GPIO_IGNITION_PIN_2 &gpio_ext_pc1
-#define GPIO_IGNITION_PIN_3 &gpio_ext_pc3
-#define GPIO_IGNITION_PIN_4 &gpio_ext_pc4
+#define CKPS_POLARITY LL_TIM_IC_POLARITY_FALLING
+
+#define GPIO_IGNITION_PIN_1 &gpio_ext_pe4
+#define GPIO_IGNITION_PIN_2 &gpio_ext_pb4
+//#define GPIO_IGNITION_PIN_3 &gpio_ext_pc3
+//#define GPIO_IGNITION_PIN_4 &gpio_ext_pc4
 
 #define GPIO_TIMER TIM2
 #define GPIO_TIMER_BUS FuriHalBusTIM2
@@ -62,14 +64,15 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     uint32_t ign_delay_cylinder_1_4 =
         timer_ticks_to_tdc_cylinder_1_4 -
         degrees_to_ticks(period_per_tooth, temp_function_to_get_degreese(worker));
-    ign_on = ign_delay_cylinder_1_4;
-    ign_off = ign_delay_cylinder_1_4 + ms_to_ticks(1);
+    uint32_t dwell = ms_to_ticks(3);
+    ign_on = ign_delay_cylinder_1_4 - dwell;
+    ign_off = ign_delay_cylinder_1_4;
 
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true);
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 + ms_to_ticks(1), GPIO_IGNITION_PIN_1, false);
 
-    //furi_thread_flags_set(
-    //    furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventPredictionDone);
+    furi_thread_flags_set(
+        furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventPredictionDone);
 }
 
 static inline void
@@ -78,11 +81,11 @@ static inline void
     worker->current_period = timer_value;
     // if current period equals missed teeth count, but not much more
     if(worker->previous_period != 0 && worker->current_period != 0) {
-        if((worker->current_period >= (worker->previous_period * CKPS_MISSED_TOOTH)) &&
-           (worker->current_period < (worker->previous_period * CKPS_MISSED_TOOTH * 2))) {
-            if(!GPIO_QUEUE_IS_FULLY_EMPTY(worker)) {
-                furi_crash("Timer queue isn't empty!");
-            }
+        if((worker->current_period >= (worker->previous_period * 2.5)) &&
+           (worker->current_period < (worker->previous_period * 3))) {
+            //if(!GPIO_QUEUE_IS_FULLY_EMPTY(worker)) {
+            //    furi_crash("Timer queue isn't empty!");
+            //}
             GPIO_QUEUE_RESET(worker);
             LL_TIM_GenerateEvent_UPDATE(GPIO_TIMER);
             LL_TIM_DisableIT_CC1(CKPS_TIMER);
@@ -95,6 +98,11 @@ static inline void
             worker->previous_period = 0;
             LL_TIM_EnableCounter(CKPS_TIMER);
             LL_TIM_EnableIT_CC1(CKPS_TIMER);
+        } else if (worker->current_period >= (worker->previous_period * 3)) {
+            worker->ckps_timer_overflows = 0;
+            worker->synced = false;
+            worker->current_period = 0;
+            worker->previous_period = 0;
         }
     }
 }
@@ -242,7 +250,7 @@ static void flipper_ecu_sync_worker_ckps_timer_init(FlipperECUSyncWorker* worker
 
     LL_TIM_IC_SetActiveInput(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_ACTIVEINPUT_DIRECTTI);
     LL_TIM_IC_SetPrescaler(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_ICPSC_DIV1);
-    LL_TIM_IC_SetPolarity(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_IC_POLARITY_RISING);
+    LL_TIM_IC_SetPolarity(CKPS_TIMER, LL_TIM_CHANNEL_CH1, CKPS_POLARITY);
     LL_TIM_IC_SetFilter(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_IC_FILTER_FDIV1);
     //LL_TIM_SetOnePulseMode(CKPS_TIMER, LL_TIM_ONEPULSEMODE_SINGLE);
 
@@ -270,10 +278,10 @@ static void flipper_ecu_sync_worker_gpio_timer_deinit(FlipperECUSyncWorker* work
         GPIO_IGNITION_PIN_1, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
     furi_hal_gpio_init_ex(
         GPIO_IGNITION_PIN_2, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
-    furi_hal_gpio_init_ex(
-        GPIO_IGNITION_PIN_3, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
-    furi_hal_gpio_init_ex(
-        GPIO_IGNITION_PIN_4, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
+    //furi_hal_gpio_init_ex(
+    //    GPIO_IGNITION_PIN_3, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
+    //furi_hal_gpio_init_ex(
+    //    GPIO_IGNITION_PIN_4, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
 }
 
 static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker) {
@@ -294,19 +302,19 @@ static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker
         GpioSpeedVeryHigh,
         GpioAltFnUnused);
 
-    furi_hal_gpio_init_ex(
-        GPIO_IGNITION_PIN_3,
-        GpioModeOutputPushPull,
-        GpioPullDown,
-        GpioSpeedVeryHigh,
-        GpioAltFnUnused);
+    //furi_hal_gpio_init_ex(
+    //    GPIO_IGNITION_PIN_3,
+    //    GpioModeOutputPushPull,
+    //    GpioPullDown,
+    //    GpioSpeedVeryHigh,
+    //    GpioAltFnUnused);
 
-    furi_hal_gpio_init_ex(
-        GPIO_IGNITION_PIN_4,
-        GpioModeOutputPushPull,
-        GpioPullDown,
-        GpioSpeedVeryHigh,
-        GpioAltFnUnused);
+    //furi_hal_gpio_init_ex(
+    //    GPIO_IGNITION_PIN_4,
+    //    GpioModeOutputPushPull,
+    //    GpioPullDown,
+    //    GpioSpeedVeryHigh,
+    //    GpioAltFnUnused);
 
     //LL_TIM_EnableIT_CC1(GPIO_TIMER);
     //LL_TIM_EnableIT_UPDATE(GPIO_TIMER);

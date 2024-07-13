@@ -3,7 +3,7 @@
 typedef enum {
     FlipperECUSceneStartSubmenuIndexDashboard,
     FlipperECUSceneStartSubmenuIndexAdjustments,
-    FlipperECUSceneStartSubmenuIndexConfiguration,
+    FlipperECUSceneStartSubmenuIndexConfig,
     FlipperECUSceneStartSubmenuIndexManual,
     FlipperECUSceneStartSubmenuIndexSaved,
     FlipperECUSceneStartSubmenuIndexAbout
@@ -31,7 +31,7 @@ void flipper_ecu_scene_start_on_enter(void* context) {
     submenu_add_item(
         app->submenu,
         "Configuration",
-        FlipperECUSceneStartSubmenuIndexConfiguration,
+        FlipperECUSceneStartSubmenuIndexConfig,
         flipper_ecu_scene_start_submenu_callback,
         app);
     submenu_add_item(
@@ -62,6 +62,10 @@ bool flipper_ecu_scene_start_on_event(void* context, SceneManagerEvent event) {
     bool success = false;
     if(event.type == SceneManagerEventTypeCustom) {
         scene_manager_set_scene_state(app->scene_manager, FlipperECUSceneStart, event.event);
+        if(event.event == FlipperECUSceneStartSubmenuIndexConfig) {
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfig);
+            success = true;
+        }
         if(event.event == FlipperECUSceneStartSubmenuIndexAbout) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneAbout);
             success = true;

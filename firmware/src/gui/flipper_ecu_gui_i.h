@@ -7,7 +7,8 @@
 #include <gui/modules/submenu.h>
 #include <gui/view_dispatcher.h>
 #include <gui/modules/widget.h>
-#include "scenes/flipper_ecu_scene.h"
+#include <gui/modules/variable_item_list.h>
+#include "scenes/config/flipper_ecu_scene.h"
 #include "views/flipper_ecu_view_dashboard.h"
 #include "../flipper_ecu_app.h"
 
@@ -20,11 +21,13 @@ struct FlipperECUGui {
     SceneManager* scene_manager;
     Submenu* submenu;
     Widget* widget;
+    VariableItemList* var_item_list;
     FlipperECUDashboardView* view_dashboard;
 };
 
 typedef enum {
     FlipperECUGuiViewSubmenu,
     FlipperECUGuiViewWidget,
+    FlipperECUGuiViewVarItemList,
     FlipperECUGuiViewDashboard,
 } FlipperECUGuiView;

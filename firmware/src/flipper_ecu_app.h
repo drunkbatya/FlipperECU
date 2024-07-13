@@ -10,3 +10,8 @@ typedef struct {
     FlipperECUSyncWorker* sync_worker;
     FlipperECUSettings* settings;
 } FlipperECUApp;
+
+typedef enum {
+    CKPSPolatityRasing,
+    CKPSPolatityFalling
+} CKPSPolatity;
