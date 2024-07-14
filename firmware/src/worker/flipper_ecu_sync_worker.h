@@ -21,15 +21,15 @@ typedef struct {
     GPIOTimerEvent queue_oc_3[GPIO_EVENTS_MAX_PER_CHANNEL];
     GPIOTimerEvent queue_oc_4[GPIO_EVENTS_MAX_PER_CHANNEL];
 
-    GPIOTimerEvent* queue_head_oc_1;
-    GPIOTimerEvent* queue_head_oc_2;
-    GPIOTimerEvent* queue_head_oc_3;
-    GPIOTimerEvent* queue_head_oc_4;
+    uint8_t queue_head_oc_1;
+    uint8_t queue_head_oc_2;
+    uint8_t queue_head_oc_3;
+    uint8_t queue_head_oc_4;
 
-    GPIOTimerEvent* queue_tail_oc_1;
-    GPIOTimerEvent* queue_tail_oc_2;
-    GPIOTimerEvent* queue_tail_oc_3;
-    GPIOTimerEvent* queue_tail_oc_4;
+    uint8_t queue_tail_oc_1;
+    uint8_t queue_tail_oc_2;
+    uint8_t queue_tail_oc_3;
+    uint8_t queue_tail_oc_4;
 } GPIOTimerQueue;
 
 typedef struct {

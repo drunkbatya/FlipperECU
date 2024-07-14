@@ -56,21 +56,23 @@ static uint32_t temp_function_to_get_degreese(FlipperECUSyncWorker* worker) {
 // TODO: variable cylynder count and mode
 static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker* worker) {
     // we r captured sync period if we r here, to get actual period we need to divide sync period by missed teeth count
-    uint32_t period_per_tooth = (worker->current_period / CKPS_MISSED_TOOTH);
+    uint32_t period_per_tooth = worker->previous_period;
     uint32_t timer_ticks_to_tdc_cylinder_1_4 =
         (period_per_tooth * FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO);
-    uint32_t ign_delay_cylinder_1_4 =
-        timer_ticks_to_tdc_cylinder_1_4 -
-        degrees_to_ticks(period_per_tooth, temp_function_to_get_degreese(worker));
+    uint32_t ign_delay_cylinder_1_4 = timer_ticks_to_tdc_cylinder_1_4;
+        //timer_ticks_to_tdc_cylinder_1_4 -
+        //degrees_to_ticks(period_per_tooth, temp_function_to_get_degreese(worker));
+    UNUSED(degrees_to_ticks);
+    UNUSED(temp_function_to_get_degreese);
     uint32_t dwell = ms_to_ticks(3);
-    ign_on = ign_delay_cylinder_1_4 - dwell;
-    ign_off = ign_delay_cylinder_1_4;
+    uint32_t ign_prepare = ign_delay_cylinder_1_4 - dwell;
+    uint32_t ign_fire = ign_delay_cylinder_1_4;
 
-    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true);
-    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 + ms_to_ticks(1), GPIO_IGNITION_PIN_1, false);
+    GPIO_QUEUE_ADD(worker, 1, ign_prepare, GPIO_IGNITION_PIN_1, true);
+    GPIO_QUEUE_ADD(worker, 1, ign_fire, GPIO_IGNITION_PIN_1, false);
 
-    furi_thread_flags_set(
-        furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventPredictionDone);
+    //furi_thread_flags_set(
+    //    furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventPredictionDone);
 }
 
 static inline void
@@ -80,27 +82,24 @@ static inline void
     // if current period equals missed teeth count, but not much more
     if(worker->previous_period != 0 && worker->current_period != 0) {
         if((worker->current_period >= (worker->previous_period * 2.5)) &&
-           (worker->current_period < (worker->previous_period * 3))) {
+           (worker->current_period < (worker->previous_period * 3.5))) {
+            FURI_CRITICAL_ENTER();
             //if(!GPIO_QUEUE_IS_FULLY_EMPTY(worker)) {
             //    furi_crash("Timer queue isn't empty!");
             //}
             GPIO_QUEUE_RESET(worker);
             LL_TIM_GenerateEvent_UPDATE(GPIO_TIMER);
-            LL_TIM_DisableIT_CC1(CKPS_TIMER);
-            LL_TIM_DisableCounter(CKPS_TIMER);
+            //LL_TIM_DisableIT_CC1(CKPS_TIMER);
+            //LL_TIM_DisableCounter(CKPS_TIMER);
 
             worker->synced = true;
             flipper_ecu_sync_worker_make_predictions(worker);
 
             worker->current_period = 0;
             worker->previous_period = 0;
-            LL_TIM_EnableCounter(CKPS_TIMER);
-            LL_TIM_EnableIT_CC1(CKPS_TIMER);
-        } else if(worker->current_period >= (worker->previous_period * 3)) {
-            worker->ckps_timer_overflows = 0;
-            worker->synced = false;
-            worker->current_period = 0;
-            worker->previous_period = 0;
+            FURI_CRITICAL_EXIT();
+            //LL_TIM_EnableCounter(CKPS_TIMER);
+            //LL_TIM_EnableIT_CC1(CKPS_TIMER);
         }
     }
 }
@@ -132,8 +131,6 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
     FlipperECUSyncWorker* worker = context;
     if(LL_TIM_IsActiveFlag_CC1(GPIO_TIMER)) {
         LL_TIM_ClearFlag_CC1(GPIO_TIMER);
-        furi_thread_flags_set(
-            furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventPredictionDone);
         test_var = LL_TIM_GetCounter(GPIO_TIMER);
         if(!GPIO_QUEUE_IS_EMPTY(worker, 1)) {
             GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 1);
@@ -377,7 +374,7 @@ void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
     if(furi_hal_pwm_is_running(FuriHalPwmOutputIdLptim2PA4)) {
         furi_hal_pwm_stop(FuriHalPwmOutputIdLptim2PA4);
     }
-    furi_hal_pwm_start(FuriHalPwmOutputIdLptim2PA4, 1000, 50);
+    furi_hal_pwm_start(FuriHalPwmOutputIdLptim2PA4, 1000, 10);
 }
 
 void flipper_ecu_sync_worker_load_engine_config(FlipperECUSyncWorker* worker) {
