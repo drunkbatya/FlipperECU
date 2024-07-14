@@ -30,7 +30,7 @@
 #define CKPS_TOTAL_TOOTH_COUNT 60
 #define CKPS_DEGREES_PER_INTERVAL (360 / CKPS_TOTAL_TOOTH_COUNT)
 #define FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO 20
-#define SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO 50
+#define SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO 52
 
 static uint32_t test_var = 0;
 static uint32_t ign_on = 0;
@@ -61,17 +61,17 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
         timer_ticks_to_tdc_cylinder_1_4 -
         degrees_to_ticks(period_per_tooth, ignition_before_deg);
     uint32_t timer_ticks_to_tdc_cylinder_2_3 =
-        (period_per_tooth * SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO) + (period_per_tooth/2);
+        (period_per_tooth * SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO);
     uint32_t ign_delay_cylinder_2_3 =
         timer_ticks_to_tdc_cylinder_2_3 -
         degrees_to_ticks(period_per_tooth, ignition_before_deg);
     uint32_t dwell = ms_to_ticks(3);
 
-    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, true);
-    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, false);
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false);
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true);
 
-    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, true);
-    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, false);
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, false);
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, true);
 }
 
 static inline void
