@@ -11,8 +11,6 @@
 
 #define TAG "FlipperECUSyncWorker"
 
-#define CKPS_POLARITY LL_TIM_IC_POLARITY_FALLING
-
 #define GPIO_IGNITION_PIN_1 &gpio_ext_pe4
 #define GPIO_IGNITION_PIN_2 &gpio_ext_pb4
 //#define GPIO_IGNITION_PIN_3 &gpio_ext_pc3
@@ -232,6 +230,10 @@ static void flipper_ecu_sync_worker_ckps_timer_deinit(FlipperECUSyncWorker* work
     furi_hal_bus_disable(CKPS_TIMER_BUS);
 }
 
+void flipper_ecu_sync_worker_await_stop(FlipperECUSyncWorker* worker) {
+    furi_thread_join(worker->thread);
+}
+
 static void flipper_ecu_sync_worker_ckps_timer_init(FlipperECUSyncWorker* worker) {
     furi_hal_bus_enable(CKPS_TIMER_BUS);
 
@@ -250,7 +252,11 @@ static void flipper_ecu_sync_worker_ckps_timer_init(FlipperECUSyncWorker* worker
 
     LL_TIM_IC_SetActiveInput(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_ACTIVEINPUT_DIRECTTI);
     LL_TIM_IC_SetPrescaler(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_ICPSC_DIV1);
-    LL_TIM_IC_SetPolarity(CKPS_TIMER, LL_TIM_CHANNEL_CH1, CKPS_POLARITY);
+    if(worker->engine_config.ckps_polarity == CKPSPolatityFalling) {
+        LL_TIM_IC_SetPolarity(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_IC_POLARITY_FALLING);
+    } else {
+        LL_TIM_IC_SetPolarity(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_IC_POLARITY_RISING);
+    }
     LL_TIM_IC_SetFilter(CKPS_TIMER, LL_TIM_CHANNEL_CH1, LL_TIM_IC_FILTER_FDIV1);
     //LL_TIM_SetOnePulseMode(CKPS_TIMER, LL_TIM_ONEPULSEMODE_SINGLE);
 
@@ -361,19 +367,10 @@ static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker
     LL_TIM_EnableCounter(GPIO_TIMER);
 }
 
-FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(FlipperECUSettings* settings) {
-    FlipperECUSyncWorker* worker = malloc(sizeof(FlipperECUSyncWorker));
-
-    worker->thread = furi_thread_alloc_ex(TAG, 4092, flipper_ecu_sync_worker_thread, worker);
-    worker->settings = settings;
-    worker->synced = false;
-    worker->current_period = 0;
-    worker->previous_period = 0;
+void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
     GPIO_QUEUE_RESET(worker);
-
     furi_thread_start(worker->thread);
-    furi_delay_tick(2);
-
+    furi_delay_tick(1);
     flipper_ecu_sync_worker_ckps_timer_init(worker);
     flipper_ecu_sync_worker_gpio_timer_init(worker);
 
@@ -381,22 +378,44 @@ FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(FlipperECUSettings* settings
         furi_hal_pwm_stop(FuriHalPwmOutputIdLptim2PA4);
     }
     furi_hal_pwm_start(FuriHalPwmOutputIdLptim2PA4, 1000, 50);
+}
+
+void flipper_ecu_sync_worker_load_engine_config(FlipperECUSyncWorker* worker) {
+    worker->engine_config.ckps_polarity = CKPSPolatityFalling;
+}
+
+FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(void) {
+    FlipperECUSyncWorker* worker = malloc(sizeof(FlipperECUSyncWorker));
+
+    worker->thread = furi_thread_alloc_ex(TAG, 4092, flipper_ecu_sync_worker_thread, worker);
+    worker->synced = false;
+    worker->current_period = 0;
+    worker->previous_period = 0;
+    flipper_ecu_sync_worker_load_engine_config(worker);
+
+    furi_delay_tick(2);
 
     return worker;
+}
+
+const FlipperECUEngineConfig* flipper_ecu_sync_worker_get_config(FlipperECUSyncWorker* worker) {
+    return &(worker->engine_config);
+}
+
+void flipper_ecu_sync_worker_update_config(
+    FlipperECUSyncWorker* worker,
+    const FlipperECUEngineConfig* config) {
+    flipper_ecu_sync_worker_send_stop(worker);
+    flipper_ecu_sync_worker_await_stop(worker);
+    if(worker->engine_config.ckps_polarity != config->ckps_polarity) {
+        worker->engine_config.ckps_polarity = config->ckps_polarity;
+    }
+    flipper_ecu_sync_worker_start(worker);
 }
 
 void flipper_ecu_sync_worker_free(FlipperECUSyncWorker* worker) {
     furi_thread_free(worker->thread);
     free(worker);
-}
-
-void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
-    furi_thread_start(worker->thread);
-    furi_delay_tick(1);
-}
-
-void flipper_ecu_sync_worker_await_stop(FlipperECUSyncWorker* worker) {
-    furi_thread_join(worker->thread);
 }
 
 uint32_t flipper_ecu_sync_worker_get_rpm(FlipperECUSyncWorker* worker) {

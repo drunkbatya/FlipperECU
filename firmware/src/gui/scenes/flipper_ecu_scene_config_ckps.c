@@ -1,12 +1,19 @@
 #include "../flipper_ecu_gui_i.h"
 
+#include "../../flipper_ecu_engine_config.h"
+
 static const char* ckps_polarity[] =
     {[CKPSPolatityRasing] = "Rasing", [CKPSPolatityFalling] = "Falling"};
 
 static void ckps_polarity_cb(VariableItem* item) {
-    FlipperECUGui* app = variable_item_get_context(item);
-    UNUSED(app);
     uint8_t index = variable_item_get_current_value_index(item);
+    FlipperECUGui* app = variable_item_get_context(item);
+    FlipperECUSyncWorker* sync_worker = flipper_ecu_app_get_sync_worker(app->ecu_app);
+    const FlipperECUEngineConfig* engine_config = flipper_ecu_sync_worker_get_config(sync_worker);
+    FlipperECUEngineConfig engine_config_new;
+    memcpy(&engine_config_new, engine_config, sizeof(FlipperECUEngineConfig));
+    engine_config_new.ckps_polarity = index;
+    flipper_ecu_sync_worker_update_config(sync_worker, &engine_config_new);
 
     variable_item_set_current_value_text(item, ckps_polarity[index]);
 }
@@ -15,10 +22,13 @@ void flipper_ecu_scene_config_ckps_on_enter(void* context) {
     FlipperECUGui* app = context;
     VariableItem* item;
 
+    FlipperECUSyncWorker* sync_worker = flipper_ecu_app_get_sync_worker(app->ecu_app);
+    const FlipperECUEngineConfig* engine_config = flipper_ecu_sync_worker_get_config(sync_worker);
+
     item = variable_item_list_add(
         app->var_item_list, "CKPS polarity", COUNT_OF(ckps_polarity), ckps_polarity_cb, app);
-    variable_item_set_current_value_index(item, CKPSPolatityRasing);
-    variable_item_set_current_value_text(item, ckps_polarity[CKPSPolatityRasing]);
+    variable_item_set_current_value_index(item, engine_config->ckps_polarity);
+    variable_item_set_current_value_text(item, ckps_polarity[engine_config->ckps_polarity]);
 
     variable_item_list_set_selected_item(
         app->var_item_list,
