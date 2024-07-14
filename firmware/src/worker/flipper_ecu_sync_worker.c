@@ -29,11 +29,14 @@
 #define CKPS_MISSED_TOOTH 2
 #define CKPS_TOTAL_TOOTH_COUNT 60
 #define CKPS_DEGREES_PER_INTERVAL (360 / CKPS_TOTAL_TOOTH_COUNT)
-#define FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO 19
+#define FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO 20
+#define SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO 50
 
 static uint32_t test_var = 0;
 static uint32_t ign_on = 0;
 static uint32_t ign_off = 0;
+
+static uint8_t ignition_before_deg = 0;
 
 static void flipper_ecu_sync_worker_gpio_timer_deinit(FlipperECUSyncWorker* worker);
 static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker);
@@ -44,13 +47,8 @@ static inline uint32_t ms_to_ticks(uint32_t ms) {
     return ((SystemCoreClock / 1000) * ms);
 }
 
-static uint32_t degrees_to_ticks(uint32_t degreese, uint32_t period_per_tooth) {
+static uint32_t degrees_to_ticks(uint32_t period_per_tooth, uint8_t degreese) {
     return (period_per_tooth / CKPS_DEGREES_PER_INTERVAL) * degreese;
-}
-
-static uint32_t temp_function_to_get_degreese(FlipperECUSyncWorker* worker) {
-    UNUSED(worker);
-    return 10;
 }
 
 // TODO: variable cylynder count and mode
@@ -59,20 +57,21 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     uint32_t period_per_tooth = worker->previous_period;
     uint32_t timer_ticks_to_tdc_cylinder_1_4 =
         (period_per_tooth * FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO);
-    uint32_t ign_delay_cylinder_1_4 = timer_ticks_to_tdc_cylinder_1_4;
-        //timer_ticks_to_tdc_cylinder_1_4 -
-        //degrees_to_ticks(period_per_tooth, temp_function_to_get_degreese(worker));
-    UNUSED(degrees_to_ticks);
-    UNUSED(temp_function_to_get_degreese);
+    uint32_t ign_delay_cylinder_1_4 =
+        timer_ticks_to_tdc_cylinder_1_4 -
+        degrees_to_ticks(period_per_tooth, ignition_before_deg);
+    uint32_t timer_ticks_to_tdc_cylinder_2_3 =
+        (period_per_tooth * SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO) + (period_per_tooth/2);
+    uint32_t ign_delay_cylinder_2_3 =
+        timer_ticks_to_tdc_cylinder_2_3 -
+        degrees_to_ticks(period_per_tooth, ignition_before_deg);
     uint32_t dwell = ms_to_ticks(3);
-    uint32_t ign_prepare = ign_delay_cylinder_1_4 - dwell;
-    uint32_t ign_fire = ign_delay_cylinder_1_4;
 
-    GPIO_QUEUE_ADD(worker, 1, ign_prepare, GPIO_IGNITION_PIN_1, true);
-    GPIO_QUEUE_ADD(worker, 1, ign_fire, GPIO_IGNITION_PIN_1, false);
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, true);
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, false);
 
-    //furi_thread_flags_set(
-    //    furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventPredictionDone);
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, true);
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, false);
 }
 
 static inline void
@@ -95,8 +94,8 @@ static inline void
             worker->synced = true;
             flipper_ecu_sync_worker_make_predictions(worker);
 
-            worker->current_period = 0;
-            worker->previous_period = 0;
+            //worker->current_period = 0;
+            //worker->previous_period = 0;
             FURI_CRITICAL_EXIT();
             //LL_TIM_EnableCounter(CKPS_TIMER);
             //LL_TIM_EnableIT_CC1(CKPS_TIMER);
@@ -131,7 +130,7 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
     FlipperECUSyncWorker* worker = context;
     if(LL_TIM_IsActiveFlag_CC1(GPIO_TIMER)) {
         LL_TIM_ClearFlag_CC1(GPIO_TIMER);
-        test_var = LL_TIM_GetCounter(GPIO_TIMER);
+        FURI_CRITICAL_ENTER();
         if(!GPIO_QUEUE_IS_EMPTY(worker, 1)) {
             GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 1);
             furi_hal_gpio_write(event->gpio_pin, event->pin_state);
@@ -139,9 +138,11 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
                 LL_TIM_OC_SetCompareCH1(GPIO_TIMER, event->next_compare_value);
             }
         }
+        FURI_CRITICAL_EXIT();
     }
     if(LL_TIM_IsActiveFlag_CC2(GPIO_TIMER)) {
         LL_TIM_ClearFlag_CC2(GPIO_TIMER);
+        FURI_CRITICAL_ENTER();
         if(!GPIO_QUEUE_IS_EMPTY(worker, 2)) {
             GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 2);
             furi_hal_gpio_write(event->gpio_pin, event->pin_state);
@@ -149,9 +150,11 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
                 LL_TIM_OC_SetCompareCH2(GPIO_TIMER, event->next_compare_value);
             }
         }
+        FURI_CRITICAL_EXIT();
     }
     if(LL_TIM_IsActiveFlag_CC3(GPIO_TIMER)) {
         LL_TIM_ClearFlag_CC3(GPIO_TIMER);
+        FURI_CRITICAL_ENTER();
         if(!GPIO_QUEUE_IS_EMPTY(worker, 3)) {
             GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 3);
             furi_hal_gpio_write(event->gpio_pin, event->pin_state);
@@ -159,9 +162,11 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
                 LL_TIM_OC_SetCompareCH3(GPIO_TIMER, event->next_compare_value);
             }
         }
+        FURI_CRITICAL_EXIT();
     }
     if(LL_TIM_IsActiveFlag_CC4(GPIO_TIMER)) {
         LL_TIM_ClearFlag_CC4(GPIO_TIMER);
+        FURI_CRITICAL_ENTER();
         if(!GPIO_QUEUE_IS_EMPTY(worker, 4)) {
             GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 4);
             furi_hal_gpio_write(event->gpio_pin, event->pin_state);
@@ -169,6 +174,7 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
                 LL_TIM_OC_SetCompareCH4(GPIO_TIMER, event->next_compare_value);
             }
         }
+        FURI_CRITICAL_EXIT();
     }
     if(LL_TIM_IsActiveFlag_UPDATE(GPIO_TIMER)) {
         LL_TIM_ClearFlag_UPDATE(GPIO_TIMER);
@@ -378,7 +384,7 @@ void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
 }
 
 void flipper_ecu_sync_worker_load_engine_config(FlipperECUSyncWorker* worker) {
-    worker->engine_config.ckps_polarity = CKPSPolatityFalling;
+    worker->engine_config.ckps_polarity = CKPSPolatityRasing;
 }
 
 FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(void) {
