@@ -36,7 +36,7 @@ static uint32_t test_var = 0;
 static uint32_t ign_on = 0;
 static uint32_t ign_off = 0;
 
-static uint8_t ignition_before_deg = 0;
+static uint8_t ignition_before_deg = 30;
 
 static void flipper_ecu_sync_worker_gpio_timer_deinit(FlipperECUSyncWorker* worker);
 static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker);
@@ -58,13 +58,11 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     uint32_t timer_ticks_to_tdc_cylinder_1_4 =
         (period_per_tooth * FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO);
     uint32_t ign_delay_cylinder_1_4 =
-        timer_ticks_to_tdc_cylinder_1_4 -
-        degrees_to_ticks(period_per_tooth, ignition_before_deg);
+        timer_ticks_to_tdc_cylinder_1_4 - degrees_to_ticks(period_per_tooth, ignition_before_deg);
     uint32_t timer_ticks_to_tdc_cylinder_2_3 =
         (period_per_tooth * SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO);
     uint32_t ign_delay_cylinder_2_3 =
-        timer_ticks_to_tdc_cylinder_2_3 -
-        degrees_to_ticks(period_per_tooth, ignition_before_deg);
+        timer_ticks_to_tdc_cylinder_2_3 - degrees_to_ticks(period_per_tooth, ignition_before_deg);
     uint32_t dwell = ms_to_ticks(3);
 
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false);
@@ -384,7 +382,7 @@ void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
 }
 
 void flipper_ecu_sync_worker_load_engine_config(FlipperECUSyncWorker* worker) {
-    worker->engine_config.ckps_polarity = CKPSPolatityRasing;
+    worker->engine_config.ckps_polarity = CKPSPolatityFalling;
 }
 
 FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(void) {

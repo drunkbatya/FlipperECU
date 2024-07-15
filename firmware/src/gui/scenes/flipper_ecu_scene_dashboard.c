@@ -22,5 +22,5 @@ bool flipper_ecu_scene_dashboard_on_event(void* context, SceneManagerEvent event
 
 void flipper_ecu_scene_dashboard_on_exit(void* context) {
     FlipperECUGui* app = context;
-    widget_reset(app->widget);
+    UNUSED(app);
 }

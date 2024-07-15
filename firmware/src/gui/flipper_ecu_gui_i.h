@@ -10,6 +10,7 @@
 #include <gui/modules/variable_item_list.h>
 #include "scenes/config/flipper_ecu_scene.h"
 #include "views/flipper_ecu_view_dashboard.h"
+#include "views/flipper_ecu_view_map_editor.h"
 #include "../flipper_ecu_app.h"
 
 struct FlipperECUGui {
@@ -23,6 +24,7 @@ struct FlipperECUGui {
     Widget* widget;
     VariableItemList* var_item_list;
     FlipperECUDashboardView* view_dashboard;
+    FlipperECUMapEditorView* view_map_editor;
 };
 
 typedef enum {
@@ -30,4 +32,5 @@ typedef enum {
     FlipperECUGuiViewWidget,
     FlipperECUGuiViewVarItemList,
     FlipperECUGuiViewDashboard,
+    FlipperECUGuiViewMapEditor,
 } FlipperECUGuiView;

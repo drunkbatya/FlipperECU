@@ -74,6 +74,10 @@ bool flipper_ecu_scene_start_on_event(void* context, SceneManagerEvent event) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneDashboard);
             success = true;
         }
+        if(event.event == FlipperECUSceneStartSubmenuIndexAdjustments) {
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneMapEditor);
+            success = true;
+        }
     }
     return success;
 }

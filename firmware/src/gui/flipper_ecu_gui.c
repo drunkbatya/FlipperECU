@@ -42,6 +42,7 @@ FlipperECUGui* flipper_ecu_gui_alloc(void* main_app) {
     app->var_item_list = variable_item_list_alloc();
 
     app->view_dashboard = flipper_ecu_view_dashboard_alloc();
+    app->view_map_editor = flipper_ecu_view_map_editor_alloc();
 
     view_dispatcher_enable_queue(app->view_dispatcher);
 
@@ -64,6 +65,10 @@ FlipperECUGui* flipper_ecu_gui_alloc(void* main_app) {
         flipper_ecu_view_dashboard_get_view(app->view_dashboard));
     view_dispatcher_add_view(
         app->view_dispatcher,
+        FlipperECUGuiViewMapEditor,
+        flipper_ecu_view_map_editor_get_view(app->view_map_editor));
+    view_dispatcher_add_view(
+        app->view_dispatcher,
         FlipperECUGuiViewVarItemList,
         variable_item_list_get_view(app->var_item_list));
     scene_manager_next_scene(app->scene_manager, FlipperECUSceneStart);
@@ -75,11 +80,14 @@ FlipperECUGui* flipper_ecu_gui_alloc(void* main_app) {
 
 void flipper_ecu_gui_free(FlipperECUGui* app) {
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewDashboard);
+    view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewMapEditor);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewSubmenu);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewWidget);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewVarItemList);
 
     flipper_ecu_view_dashboard_free(app->view_dashboard);
+    flipper_ecu_view_map_editor_free(app->view_map_editor);
+
     widget_free(app->widget);
     submenu_free(app->submenu);
     variable_item_list_free(app->var_item_list);
