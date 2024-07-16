@@ -15,11 +15,10 @@ struct FlipperECUMapEditorView {
 
 typedef struct {
     uint8_t size_x;
-    uint8_t size_y;
-    int32_t x_start;
-    int32_t x_end;
-    int32_t y_start;
-    int32_t y_end;
+    int32_t x_min;
+    int32_t x_max;
+    int32_t val_min;
+    int32_t val_max;
     char map_name[MAP_NAME_SIZE];
     char x_name[X_Y_NAME_SIZE];
     char y_name[X_Y_NAME_SIZE];
@@ -31,11 +30,8 @@ void flipper_ecu_view_map_editor_load_map(FlipperECUMapEditorView* view_map_edit
         FlipperECUMapEditorViewModel * model,
         {
             model->size_x = 5;
-            model->size_y = 4;
-            model->x_start = 0;
-            model->y_start = 0;
-            model->x_end = 10000;
-            model->y_end = 20;
+            model->x_min = 0;
+            model->x_max = 10000;
             strncpy(model->map_name, "Ignition main map", MAP_NAME_SIZE - 1);
             strncpy(model->x_name, "RPM", X_Y_NAME_SIZE - 1);
             strncpy(model->y_name, "Deg", X_Y_NAME_SIZE - 1);
@@ -65,7 +61,7 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
     uint16_t step = main_field_width / (map_editor_model->size_x - 1);
     uint16_t step_rem = main_field_width % (map_editor_model->size_x - 1);
     uint16_t num_step =
-        (map_editor_model->x_end - map_editor_model->x_start) / (map_editor_model->size_x - 1);
+        (map_editor_model->x_max - map_editor_model->x_min) / (map_editor_model->size_x - 1);
     for(uint8_t x_model = 0; x_model < map_editor_model->size_x; x_model++) {
         if(x_model == (map_editor_model->size_x - 1)) { // last iteration
             step += step_rem;
@@ -74,7 +70,7 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         canvas_draw_line(
             canvas, x, main_field_start_y, x, main_field_start_y + main_field_height - 1);
         if(x_model != (map_editor_model->size_x - 1)) { // ommiting last iteration
-            process_number_to_fstr(fstr, (map_editor_model->x_start + (num_step * x_model)));
+            process_number_to_fstr(fstr, (map_editor_model->x_min + (num_step * x_model)));
             canvas_draw_str_aligned(
                 canvas,
                 x,
