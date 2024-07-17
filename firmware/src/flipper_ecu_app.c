@@ -6,6 +6,8 @@ FlipperECUApp* flipper_ecu_app_alloc(void) {
     FlipperECUApp* app = malloc(sizeof(FlipperECUApp));
     app->gui = flipper_ecu_gui_alloc(app);
 
+    app->adj = flipper_ecu_engine_adj_alloc();
+
     app->sync_worker = flipper_ecu_sync_worker_alloc();
     return app;
 }
@@ -30,6 +32,7 @@ int32_t flipper_ecu_app(void* p) {
     flipper_ecu_sync_worker_send_stop(app->sync_worker);
 
     flipper_ecu_sync_worker_await_stop(app->sync_worker);
+    flipper_ecu_engine_adj_free(app->adj);
     flipper_ecu_app_free(app);
     free(app);
     return 0;
