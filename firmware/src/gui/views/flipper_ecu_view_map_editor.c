@@ -199,10 +199,16 @@ static bool flipper_ecu_view_map_editor_input_callback(InputEvent* event, void* 
                             model->mode = ModeView;
                             consumed = true;
                         }
-
                     } else if(event->key == InputKeyLeft) {
                         if(event->type == InputTypeShort) {
                             if(model->selected_x_dot != 0) {
+                                model->selected_x_dot -= 1;
+                            }
+                            consumed = true;
+                        } else if(event->type == InputTypeRepeat) {
+                            if(model->selected_x_dot > 5) {
+                                model->selected_x_dot -= 5;
+                            } else if(model->selected_x_dot != 0) {
                                 model->selected_x_dot -= 1;
                             }
                             consumed = true;
@@ -210,6 +216,13 @@ static bool flipper_ecu_view_map_editor_input_callback(InputEvent* event, void* 
                     } else if(event->key == InputKeyRight) {
                         if(event->type == InputTypeShort) {
                             if(model->selected_x_dot < model->map_size - 1) {
+                                model->selected_x_dot += 1;
+                            }
+                            consumed = true;
+                        } else if(event->type == InputTypeRepeat) {
+                            if(model->selected_x_dot < model->map_size - 5 - 1) {
+                                model->selected_x_dot += 5;
+                            } else if(model->selected_x_dot < model->map_size - 1) {
                                 model->selected_x_dot += 1;
                             }
                             consumed = true;
