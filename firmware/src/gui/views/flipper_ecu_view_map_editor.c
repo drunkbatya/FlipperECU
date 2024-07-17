@@ -108,12 +108,28 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         canvas, DISPLAY_WIDTH, 0, AlignRight, AlignTop, map_editor_model->map_name);
 
     uint16_t step = main_field_width / (map_editor_model->map_size - 1);
-    uint8_t y_step = main_field_height / (map_editor_model->val_max - map_editor_model->val_min);
-    if(y_step == 0) y_step = 1;
+    uint16_t value_range = map_editor_model->val_max - map_editor_model->val_min;
+    uint8_t scale = 1;
+    uint8_t y_step = main_field_height / value_range;
+    if(y_step == 0) {
+        y_step = 1;
+        if(main_field_height % value_range) {
+            scale = value_range / main_field_height;
+            if(value_range % main_field_height) {
+                scale += 1;
+            }
+        }
+    }
     for(uint8_t x_model = 0; x_model < map_editor_model->map_size; x_model++) {
+        int16_t current_value_to_calc = map_editor_model->data[x_model];
+        if(map_editor_model->val_min < 0) {
+            current_value_to_calc += -(map_editor_model->val_min);
+        } else if(map_editor_model->val_min > 0) {
+            current_value_to_calc -= map_editor_model->val_min;
+        }
         uint16_t x = (x_model * step) + main_field_start_x;
-        uint8_t y = main_field_height - (map_editor_model->data[x_model] * y_step) +
-                    main_field_start_y - 1;
+        uint8_t y =
+            main_field_height - (current_value_to_calc * y_step / scale) + main_field_start_y - 1;
 
         // dots and line
         flipper_ecu_view_map_editor_draw_scaled_dot(canvas, x, y);
@@ -196,30 +212,35 @@ static bool flipper_ecu_view_map_editor_input_callback(InputEvent* event, void* 
                             if(model->selected_x_dot < model->map_size - 1) {
                                 model->selected_x_dot += 1;
                             }
+                            consumed = true;
                         }
                     } else if(event->key == InputKeyUp) {
                         if(event->type == InputTypeShort) {
                             if(model->data[model->selected_x_dot] < model->val_max) {
                                 model->data[model->selected_x_dot] += 1;
                             }
+                            consumed = true;
                         } else if(event->type == InputTypeRepeat) {
-                            if(model->data[model->selected_x_dot] < model->val_max + 5) {
+                            if(model->data[model->selected_x_dot] < model->val_max - 5) {
                                 model->data[model->selected_x_dot] += 5;
-                            } else {
+                            } else if(model->data[model->selected_x_dot] < model->val_max) {
                                 model->data[model->selected_x_dot] += 1;
                             }
+                            consumed = true;
                         }
                     } else if(event->key == InputKeyDown) {
                         if(event->type == InputTypeShort) {
                             if(model->data[model->selected_x_dot] > model->val_min) {
                                 model->data[model->selected_x_dot] -= 1;
                             }
+                            consumed = true;
                         } else if(event->type == InputTypeRepeat) {
-                            if(model->data[model->selected_x_dot] > model->val_min - 5) {
+                            if(model->data[model->selected_x_dot] > model->val_min + 5) {
                                 model->data[model->selected_x_dot] -= 5;
-                            } else {
+                            } else if(model->data[model->selected_x_dot] > model->val_min) {
                                 model->data[model->selected_x_dot] -= 1;
                             }
+                            consumed = true;
                         }
                     }
                 }
