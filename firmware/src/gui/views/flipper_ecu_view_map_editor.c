@@ -17,8 +17,6 @@ struct FlipperECUMapEditorView {
     View* view;
 };
 
-typedef enum { ModeView, ModeEdit } Mode;
-
 static int16_t test_data[16] = {0, 40, 13, 12, 20, 15, 16, 17, 18, 29, 28, 27, 10, 9, 13};
 static const int16_t test_keys[16] =
     {600, 720, 840, 990, 1170, 1380, 1650, 1950, 2310, 2730, 3210, 3840, 4530, 5370, 6360, 7500};
@@ -28,13 +26,15 @@ typedef struct {
     uint8_t prev_dot_x;
     uint8_t prev_dot_y;
     uint8_t selected_x_dot;
-    Mode mode;
+    bool edit_mode;
     int16_t val_min;
     int16_t val_max;
     char map_name[MAP_NAME_SIZE];
     char x_name[X_Y_NAME_SIZE];
     char val_name[X_Y_NAME_SIZE];
     int16_t* data;
+    int16_t using_key;
+    bool map_in_use;
     const int16_t* keys;
 } FlipperECUMapEditorViewModel;
 
@@ -51,13 +51,16 @@ void flipper_ecu_view_map_editor_load_map(FlipperECUMapEditorView* view_map_edit
             strncpy(model->val_name, "^ Angle", X_Y_NAME_SIZE - 1);
             model->data = test_data;
             model->keys = test_keys;
-            model->mode = ModeView;
+            model->edit_mode = false;
             model->selected_x_dot = 3;
+            model->using_key = 1950;
+            model->map_in_use = false;
         },
         true);
 }
 
-static void flipper_ecu_view_map_editor_draw_scaled_dot(Canvas* canvas, uint8_t x, uint8_t y) {
+static void
+    flipper_ecu_view_map_editor_draw_scaled_dot(Canvas* canvas, uint8_t x, uint8_t y, bool framed) {
     canvas_draw_dot(canvas, x, y);
     canvas_draw_dot(canvas, x - 1, y);
     canvas_draw_dot(canvas, x + 1, y);
@@ -67,6 +70,9 @@ static void flipper_ecu_view_map_editor_draw_scaled_dot(Canvas* canvas, uint8_t 
     canvas_draw_dot(canvas, x, y + 1);
     canvas_draw_dot(canvas, x - 1, y + 1);
     canvas_draw_dot(canvas, x + 1, y + 1);
+    if(framed) {
+        canvas_draw_frame(canvas, x - 3, y - 3, 7, 7);
+    }
 }
 
 static void flipper_ecu_view_map_editor_draw_dotted_line(
@@ -121,6 +127,7 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         }
     }
     for(uint8_t x_model = 0; x_model < map_editor_model->map_size; x_model++) {
+        bool framed_dot = false;
         int16_t current_value_to_calc = map_editor_model->data[x_model];
         if(map_editor_model->val_min < 0) {
             current_value_to_calc += -(map_editor_model->val_min);
@@ -131,8 +138,14 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         uint8_t y =
             main_field_height - (current_value_to_calc * y_step / scale) + main_field_start_y - 1;
 
+        // if engine is running and current key is last used
+        if(map_editor_model->map_in_use &&
+           (map_editor_model->keys[x_model] == map_editor_model->using_key)) {
+            framed_dot = true;
+        }
+
         // dots and line
-        flipper_ecu_view_map_editor_draw_scaled_dot(canvas, x, y);
+        flipper_ecu_view_map_editor_draw_scaled_dot(canvas, x, y, framed_dot);
         if(x_model < map_editor_model->map_size + 1) {
             if(x_model != 0) {
                 canvas_draw_line(
@@ -143,7 +156,7 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         }
 
         // editing mode
-        if(map_editor_model->mode == ModeEdit) {
+        if(map_editor_model->edit_mode) {
             if(x_model == map_editor_model->selected_x_dot) {
                 // lines
                 flipper_ecu_view_map_editor_draw_dotted_line(
@@ -185,10 +198,10 @@ static bool flipper_ecu_view_map_editor_input_callback(InputEvent* event, void* 
         view_map_editor->view,
         FlipperECUMapEditorViewModel * model,
         {
-            if(model->mode != ModeEdit) {
+            if(!model->edit_mode) {
                 if((event->type == InputTypeShort) || (event->type == InputTypeRepeat)) {
                     if(event->key == InputKeyOk) {
-                        model->mode = ModeEdit;
+                        model->edit_mode = true;
                         consumed = true;
                     }
                 }
@@ -196,7 +209,7 @@ static bool flipper_ecu_view_map_editor_input_callback(InputEvent* event, void* 
                 if((event->type == InputTypeShort) || (event->type == InputTypeRepeat)) {
                     if((event->key == InputKeyOk) || (event->key == InputKeyBack)) {
                         if(event->type == InputTypeShort) {
-                            model->mode = ModeView;
+                            model->edit_mode = false;
                             consumed = true;
                         }
                     } else if(event->key == InputKeyLeft) {
