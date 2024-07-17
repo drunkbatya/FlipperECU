@@ -12,6 +12,8 @@
 #define EDITOR_ITEM_H 64 / 3
 #define EDITOR_ITEM_W 128
 
+#define PLOT_PADDING_PX 4
+
 struct FlipperECUMapEditorView {
     View* view;
 };
@@ -83,6 +85,8 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
     const uint8_t main_field_start_y = FONT_HEIGHT;
     const uint8_t main_field_width = DISPLAY_WIDTH; // Y values
     const uint8_t main_field_height = DISPLAY_HEIGHT - (FONT_HEIGHT * 2) + 2; // title and X values
+    const uint8_t main_field_plot_width = main_field_width - (PLOT_PADDING_PX * 2);
+    const uint8_t main_field_plot_height = main_field_height - (PLOT_PADDING_PX * 2);
     FuriString* fstr = furi_string_alloc();
 
     // Table border
@@ -102,16 +106,17 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         AlignTop,
         flipper_ecu_map_get_map_name(map_editor_model->map));
 
-    uint16_t step = main_field_width / (flipper_ecu_map_get_map_x_size(map_editor_model->map) - 1);
+    uint16_t step =
+        main_field_plot_width / (flipper_ecu_map_get_map_x_size(map_editor_model->map) - 1);
     uint16_t value_range = flipper_ecu_map_get_value_max(map_editor_model->map) -
                            flipper_ecu_map_get_value_min(map_editor_model->map);
     uint8_t scale = 1;
-    uint8_t y_step = main_field_height / value_range;
+    uint8_t y_step = main_field_plot_height / value_range;
     if(y_step == 0) {
         y_step = 1;
-        if(main_field_height % value_range) {
-            scale = value_range / main_field_height;
-            if(value_range % main_field_height) {
+        if(main_field_plot_height % value_range) {
+            scale = value_range / main_field_plot_height;
+            if(value_range % main_field_plot_height) {
                 scale += 1;
             }
         }
@@ -126,9 +131,9 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         } else if(flipper_ecu_map_get_value_min(map_editor_model->map) > 0) {
             current_value_to_calc -= flipper_ecu_map_get_value_min(map_editor_model->map);
         }
-        uint16_t x = (x_model * step) + main_field_start_x;
-        uint8_t y =
-            main_field_height - (current_value_to_calc * y_step / scale) + main_field_start_y - 1;
+        uint16_t x = (x_model * step) + main_field_start_x + PLOT_PADDING_PX;
+        uint8_t y = main_field_plot_height - (current_value_to_calc * y_step / scale) +
+                    main_field_start_y + PLOT_PADDING_PX;
 
         // if engine is running and current key is last used
         //if(map_editor_model->map_in_use &&

@@ -33,3 +33,4 @@ int16_t flipper_ecu_map_get_value_max(FlipperECUMap* map);
 const char* flipper_ecu_map_get_map_name(FlipperECUMap* map);
 const char* flipper_ecu_map_get_x_name(FlipperECUMap* map);
 const char* flipper_ecu_map_get_values_name(FlipperECUMap* map);
+int16_t flipper_ecu_map_interpolate(FlipperECUMap* map, int16_t key);

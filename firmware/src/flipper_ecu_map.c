@@ -87,6 +87,7 @@ FlipperECUMap* flipper_ecu_map_create_alloc(
     uint8_t map_x_size,
     uint8_t map_z_size // no care for 2D maps
 ) {
+    furi_check(map_x_size > 1);
     const uint16_t map_mem_keys_size = map_x_size * sizeof(int16_t);
     uint32_t map_mem_values_size = map_x_size * sizeof(int16_t);
     if(type == FlipperECUMapType3D) {
@@ -109,4 +110,25 @@ FlipperECUMap* flipper_ecu_map_create_alloc(
 
 void flipper_ecu_map_free(FlipperECUMap* map) {
     free(map);
+}
+
+int16_t flipper_ecu_map_interpolate(FlipperECUMap* map, int16_t key) {
+    int16_t ret = 0;
+    for(uint8_t i = 0; i < map->map_x_size; i++) {
+        if(key == map->keys[i]) { // exact match
+            ret = map->values[i];
+            break;
+        }
+        if(i == map->map_x_size - 1) { // use latest value if we'r reached end of the map
+            ret = map->values[i];
+            break;
+        }
+        if(i != 0) {
+            if((map->keys[i - 1] < key) &&
+               (map->keys[i] > key)) { // if we'r now between two points
+                ret = (map->values[i] + map->keys[i - 1]) / 2; // temp
+            }
+        }
+    }
+    return ret;
 }
