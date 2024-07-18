@@ -6,6 +6,7 @@
 
 #include "../flipper_ecu_engine_config.h"
 #include "../flipper_ecu_engine_adjustments.h"
+#include "../flipper_ecu_engine_status.h"
 
 #define GPIO_EVENTS_MAX_PER_CHANNEL 4
 
@@ -37,6 +38,7 @@ typedef struct {
     FuriThread* thread;
     FlipperECUEngineConfig engine_config;
     FlipperECUEngineAdjustments* engine_adj;
+    FlipperECUEngineStatus* engine_status;
     GPIOTimerQueue qpio_timer_queue;
     uint32_t current_period;
     uint32_t previous_period;
@@ -54,7 +56,9 @@ typedef enum {
                                    FlipperECUSyncWorkerEventPredictionDone
 } FlipperECUSyncWorkerEvent;
 
-FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(void);
+FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(
+    FlipperECUEngineStatus* engine_status,
+    FlipperECUEngineAdjustments* engine_adj);
 void flipper_ecu_sync_worker_send_stop(FlipperECUSyncWorker* worker);
 void flipper_ecu_sync_worker_await_stop(FlipperECUSyncWorker* worker);
 void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker);

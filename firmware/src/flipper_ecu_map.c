@@ -126,7 +126,8 @@ int16_t flipper_ecu_map_interpolate(FlipperECUMap* map, int16_t key) {
         if(i != 0) {
             if((map->keys[i - 1] < key) &&
                (map->keys[i] > key)) { // if we'r now between two points
-                ret = (map->values[i] + map->keys[i - 1]) / 2; // temp
+                ret = (map->values[i] + map->values[i - 1]) / 2; // temp
+                break;
             }
         }
     }

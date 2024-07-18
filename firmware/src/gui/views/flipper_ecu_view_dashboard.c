@@ -7,21 +7,23 @@ struct FlipperECUDashboardView {
 };
 
 typedef struct {
-    uint32_t rpm;
+    const FlipperECUEngineStatus* engine_status;
 } FlipperECUDashboardViewModel;
 
 static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _model) {
     FlipperECUDashboardViewModel* view_dashboard_model = _model;
-    char temp_str[18];
+    FuriString* fstr = furi_string_alloc();
+
     canvas_clear(canvas);
-    snprintf(temp_str, 18, "Counter: %lu", view_dashboard_model->rpm);
-    canvas_draw_str(canvas, 0, 10, temp_str);
-    snprintf(temp_str, 18, "RPM: %lu", SystemCoreClock / view_dashboard_model->rpm);
-    canvas_draw_str(canvas, 0, 20, temp_str);
-    snprintf(temp_str, 18, "CoreClock: %lu", SystemCoreClock);
-    canvas_draw_str(canvas, 0, 30, temp_str);
-    snprintf(temp_str, 18, "TickToMs: %lu", SystemCoreClock / (1 * 1000));
-    canvas_draw_str(canvas, 0, 40, temp_str);
+    furi_string_printf(fstr, "RPM: %u", view_dashboard_model->engine_status->rpm);
+    canvas_draw_str(canvas, 0, 10, furi_string_get_cstr(fstr));
+    furi_string_printf(fstr, "Ignition angle: %u", view_dashboard_model->engine_status->ign_angle);
+    canvas_draw_str(canvas, 0, 20, furi_string_get_cstr(fstr));
+    furi_string_printf(
+        fstr, "Sync status: %s", view_dashboard_model->engine_status->synced ? "true" : "false");
+    canvas_draw_str(canvas, 0, 30, furi_string_get_cstr(fstr));
+
+    furi_string_free(fstr);
 }
 
 static bool flipper_ecu_view_dashboard_input_callback(InputEvent* event, void* _model) {
@@ -33,7 +35,8 @@ static bool flipper_ecu_view_dashboard_input_callback(InputEvent* event, void* _
     return consumed;
 }
 
-FlipperECUDashboardView* flipper_ecu_view_dashboard_alloc(void) {
+FlipperECUDashboardView*
+    flipper_ecu_view_dashboard_alloc(const FlipperECUEngineStatus* engine_status) {
     FlipperECUDashboardView* view_dashboard = malloc(sizeof(FlipperECUDashboardView));
     view_dashboard->view = view_alloc();
     view_allocate_model(
@@ -41,17 +44,17 @@ FlipperECUDashboardView* flipper_ecu_view_dashboard_alloc(void) {
     view_set_context(view_dashboard->view, view_dashboard);
     view_set_draw_callback(view_dashboard->view, flipper_ecu_view_dashboard_draw_callback);
     view_set_input_callback(view_dashboard->view, flipper_ecu_view_dashboard_input_callback);
+    with_view_model(
+        view_dashboard->view,
+        FlipperECUDashboardViewModel * model,
+        { model->engine_status = engine_status; },
+        true);
     return view_dashboard;
 }
 
 void flipper_ecu_view_dashboard_free(FlipperECUDashboardView* view_dashboard) {
     view_free(view_dashboard->view);
     free(view_dashboard);
-}
-
-void flipper_ecu_view_dashboard_set_rpm(FlipperECUDashboardView* view_dashboard, uint32_t rpm) {
-    with_view_model(
-        view_dashboard->view, FlipperECUDashboardViewModel * model, { model->rpm = rpm; }, true);
 }
 
 void flipper_ecu_view_dashboard_view_update(FlipperECUDashboardView* view_dashboard) {

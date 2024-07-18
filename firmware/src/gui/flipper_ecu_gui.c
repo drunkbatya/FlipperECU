@@ -41,7 +41,7 @@ FlipperECUGui* flipper_ecu_gui_alloc(void* main_app) {
     app->widget = widget_alloc();
     app->var_item_list = variable_item_list_alloc();
 
-    app->view_dashboard = flipper_ecu_view_dashboard_alloc();
+    app->view_dashboard = flipper_ecu_view_dashboard_alloc(&ecu_app->engine_status);
     app->view_map_editor = flipper_ecu_view_map_editor_alloc();
 
     view_dispatcher_enable_queue(app->view_dispatcher);
