@@ -50,5 +50,5 @@ const char* flipper_ecu_map_get_map_name(FlipperECUMap* map);
 const char* flipper_ecu_map_get_x_name(FlipperECUMap* map);
 const char* flipper_ecu_map_get_z_name_3d(FlipperECUMap* map);
 const char* flipper_ecu_map_get_values_name(FlipperECUMap* map);
-FlipperECUMapType flipper_ecu_map_get_type(FlipperECUMap* map);
+FlipperECUMapType flipper_ecu_map_get_map_type(FlipperECUMap* map);
 int16_t flipper_ecu_map_interpolate_2d(FlipperECUMap* map, int16_t key_x);

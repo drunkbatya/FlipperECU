@@ -208,3 +208,7 @@ int16_t flipper_ecu_map_interpolate_2d(FlipperECUMap* map, int16_t key_x) {
     }
     return ret;
 }
+
+FlipperECUMapType flipper_ecu_map_get_map_type(FlipperECUMap* map) {
+    return map->type;
+}

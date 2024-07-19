@@ -23,6 +23,7 @@ typedef struct {
     uint8_t prev_dot_x;
     uint8_t prev_dot_y;
     uint8_t selected_x_dot;
+    uint8_t selected_z_dot;
     bool edit_mode;
     int16_t using_key;
     bool map_in_use;
@@ -38,6 +39,7 @@ void flipper_ecu_view_map_editor_load_map(
             model->map = map;
             model->edit_mode = false;
             model->selected_x_dot = 3;
+            model->selected_z_dot = 0;
             model->using_key = 1950;
             model->map_in_use = false;
         },
@@ -79,6 +81,31 @@ static void flipper_ecu_view_map_editor_draw_dotted_line(
     }
 }
 
+int16_t flipper_ecu_view_map_editor_get_selected_dot_value(
+    FlipperECUMapEditorViewModel* map_editor_model) {
+    if(flipper_ecu_map_get_map_type(map_editor_model->map) == FlipperECUMapType2D) {
+        return flipper_ecu_map_get_value_by_index_2d(
+            map_editor_model->map, map_editor_model->selected_x_dot);
+    }
+    return flipper_ecu_map_get_value_by_index_3d(
+        map_editor_model->map, map_editor_model->selected_x_dot, map_editor_model->selected_z_dot);
+}
+
+void flipper_ecu_view_map_editor_set_selected_dot_value(
+    FlipperECUMapEditorViewModel* map_editor_model,
+    int16_t value) {
+    if(flipper_ecu_map_get_map_type(map_editor_model->map) == FlipperECUMapType2D) {
+        flipper_ecu_map_set_value_by_index_2d(
+            map_editor_model->map, map_editor_model->selected_x_dot, value);
+    } else {
+        flipper_ecu_map_set_value_by_index_3d(
+            map_editor_model->map,
+            map_editor_model->selected_x_dot,
+            map_editor_model->selected_z_dot,
+            value);
+    }
+}
+
 static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _model) {
     FlipperECUMapEditorViewModel* map_editor_model = _model;
     const uint8_t main_field_start_x = 0;
@@ -94,8 +121,8 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         canvas, main_field_start_x, main_field_start_y, main_field_width, main_field_height);
 
     // value name
-    canvas_draw_str_aligned(
-        canvas, 0, 0, AlignLeft, AlignTop, flipper_ecu_map_get_values_name(map_editor_model->map));
+    furi_string_printf(fstr, "^ %s", flipper_ecu_map_get_values_name(map_editor_model->map));
+    canvas_draw_str_aligned(canvas, 0, 0, AlignLeft, AlignTop, furi_string_get_cstr(fstr));
 
     // Map title
     canvas_draw_str_aligned(
@@ -124,8 +151,15 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
     for(uint8_t x_model = 0; x_model < flipper_ecu_map_get_map_x_size(map_editor_model->map);
         x_model++) {
         bool framed_dot = false;
-        int16_t current_value_to_calc =
-            flipper_ecu_map_get_value_by_index_2d(map_editor_model->map, x_model);
+        int16_t current_value_to_calc = 0;
+        if(flipper_ecu_map_get_map_type(map_editor_model->map) == FlipperECUMapType2D) {
+            current_value_to_calc =
+                flipper_ecu_map_get_value_by_index_2d(map_editor_model->map, x_model);
+        } else {
+            current_value_to_calc = flipper_ecu_map_get_value_by_index_3d(
+                map_editor_model->map, x_model, map_editor_model->selected_z_dot);
+        }
+
         if(flipper_ecu_map_get_value_min(map_editor_model->map) < 0) {
             current_value_to_calc += -(flipper_ecu_map_get_value_min(map_editor_model->map));
         } else if(flipper_ecu_map_get_value_min(map_editor_model->map) > 0) {
@@ -173,10 +207,14 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
                     AlignLeft,
                     AlignBottom,
                     furi_string_get_cstr(fstr));
-                furi_string_printf(
-                    fstr,
-                    "value: %d",
-                    flipper_ecu_map_get_value_by_index_2d(map_editor_model->map, x_model));
+                int16_t value = 0;
+                if(flipper_ecu_map_get_map_type(map_editor_model->map) == FlipperECUMapType2D) {
+                    value = flipper_ecu_map_get_value_by_index_2d(map_editor_model->map, x_model);
+                } else {
+                    value = flipper_ecu_map_get_value_by_index_3d(
+                        map_editor_model->map, x_model, map_editor_model->selected_z_dot);
+                }
+                furi_string_printf(fstr, "value: %d", value);
                 canvas_draw_str_aligned(
                     canvas,
                     45,
@@ -185,17 +223,40 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
                     AlignBottom,
                     furi_string_get_cstr(fstr));
             }
+        } else { // not editing mode
+            if(flipper_ecu_map_get_map_type(map_editor_model->map) == FlipperECUMapType3D) {
+                int16_t selected_z_key = flipper_ecu_map_get_key_z_by_index_3d(
+                    map_editor_model->map, map_editor_model->selected_z_dot);
+                const char* fmt = NULL;
+                if (map_editor_model->selected_z_dot < flipper_ecu_map_get_map_z_size_3d(map_editor_model->map) - 1) {
+                    if (map_editor_model->selected_z_dot > 0) {
+                        fmt = "< %s: %d >";
+                    } else {
+                        fmt = "%s: %d >";
+                    }
+                } else {
+                    if (map_editor_model->selected_z_dot > 0) {
+                        fmt = "< %s: %d";
+                    } else {
+                        fmt = "%s: %d";
+                    }
+                }
+                furi_string_printf(fstr, fmt, flipper_ecu_map_get_z_name_3d(map_editor_model->map), selected_z_key);
+                canvas_draw_str_aligned(
+                    canvas,
+                    0,
+                    DISPLAY_HEIGHT,
+                    AlignLeft,
+                    AlignBottom,
+                    furi_string_get_cstr(fstr));
+            }
         }
     }
 
     // x name
+    furi_string_printf(fstr, "> %s", flipper_ecu_map_get_x_name(map_editor_model->map));
     canvas_draw_str_aligned(
-        canvas,
-        DISPLAY_WIDTH,
-        DISPLAY_HEIGHT,
-        AlignRight,
-        AlignBottom,
-        flipper_ecu_map_get_x_name(map_editor_model->map));
+        canvas, DISPLAY_WIDTH, DISPLAY_HEIGHT, AlignRight, AlignBottom, furi_string_get_cstr(fstr));
     furi_string_free(fstr);
 }
 
@@ -211,6 +272,16 @@ static bool flipper_ecu_view_map_editor_input_callback(InputEvent* event, void* 
                     if(event->key == InputKeyOk) {
                         model->edit_mode = true;
                         consumed = true;
+                    } else if (flipper_ecu_map_get_map_type(model->map) == FlipperECUMapType3D) {
+                        if(event->key == InputKeyRight) {
+                            if (model->selected_z_dot < flipper_ecu_map_get_map_z_size_3d(model->map) - 1) {
+                                model->selected_z_dot += 1;
+                            }
+                        } else if(event->key == InputKeyLeft) {
+                            if (model->selected_z_dot > 0) {
+                                model->selected_z_dot -= 1;
+                            }
+                        }
                     }
                 }
             } else {
@@ -253,42 +324,40 @@ static bool flipper_ecu_view_map_editor_input_callback(InputEvent* event, void* 
                             consumed = true;
                         }
                     } else if(event->key == InputKeyUp) {
-                        int16_t value = flipper_ecu_map_get_value_by_index_2d(
-                            model->map, model->selected_x_dot);
+                        int16_t value = flipper_ecu_view_map_editor_get_selected_dot_value(model);
                         int16_t value_max = flipper_ecu_map_get_value_max(model->map);
                         if(event->type == InputTypeShort) {
                             if(value < value_max) {
-                                flipper_ecu_map_set_value_by_index_2d(
-                                    model->map, model->selected_x_dot, value + 1);
+                                flipper_ecu_view_map_editor_set_selected_dot_value(
+                                    model, value + 1);
                             }
                             consumed = true;
                         } else if(event->type == InputTypeRepeat) {
                             if(value < value_max - 5) {
-                                flipper_ecu_map_set_value_by_index_2d(
-                                    model->map, model->selected_x_dot, value + 5);
+                                flipper_ecu_view_map_editor_set_selected_dot_value(
+                                    model, value + 5);
                             } else if(value < value_max) {
-                                flipper_ecu_map_set_value_by_index_2d(
-                                    model->map, model->selected_x_dot, value + 1);
+                                flipper_ecu_view_map_editor_set_selected_dot_value(
+                                    model, value + 1);
                             }
                             consumed = true;
                         }
                     } else if(event->key == InputKeyDown) {
-                        int16_t value = flipper_ecu_map_get_value_by_index_2d(
-                            model->map, model->selected_x_dot);
+                        int16_t value = flipper_ecu_view_map_editor_get_selected_dot_value(model);
                         int16_t value_min = flipper_ecu_map_get_value_min(model->map);
                         if(event->type == InputTypeShort) {
                             if(value > value_min) {
-                                flipper_ecu_map_set_value_by_index_2d(
-                                    model->map, model->selected_x_dot, value - 1);
+                                flipper_ecu_view_map_editor_set_selected_dot_value(
+                                    model, value - 1);
                             }
                             consumed = true;
                         } else if(event->type == InputTypeRepeat) {
                             if(value > value_min + 5) {
-                                flipper_ecu_map_set_value_by_index_2d(
-                                    model->map, model->selected_x_dot, value - 5);
+                                flipper_ecu_view_map_editor_set_selected_dot_value(
+                                    model, value - 5);
                             } else if(value > value_min) {
-                                flipper_ecu_map_set_value_by_index_2d(
-                                    model->map, model->selected_x_dot, value - 1);
+                                flipper_ecu_view_map_editor_set_selected_dot_value(
+                                    model, value - 1);
                             }
                             consumed = true;
                         }
