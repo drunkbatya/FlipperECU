@@ -4,6 +4,7 @@
 
 typedef struct {
     FlipperECUMap* ign_map;
+    FlipperECUMap* ign_tps_map;
 } FlipperECUEngineAdjustments;
 
 FlipperECUEngineAdjustments* flipper_ecu_engine_adj_alloc(void);
