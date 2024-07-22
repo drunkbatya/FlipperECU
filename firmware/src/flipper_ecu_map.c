@@ -185,16 +185,19 @@ FlipperECUMap* flipper_ecu_map_create_alloc_3d(uint8_t map_x_size, uint8_t map_z
 }
 
 uint32_t flipper_ecu_map_get_mem_size(FlipperECUMap* map) {
-    uint16_t map_mem_keys_size = map->map_x_size * sizeof(int16_t);
+    const uint16_t map_mem_keys_z_size = map->map_z_size * sizeof(int16_t);
+    uint16_t map_mem_keys_x_size = map->map_x_size * sizeof(int16_t);
     uint16_t map_mem_values_size = map->map_x_size * sizeof(int16_t);
+
+    uint32_t total_mem = 0;
     if(map->type == FlipperECUMapType3D) {
-        furi_check(map->map_z_size > 1); // i think nobody wants a 1-layer'ed 3D map
-        // 2D map size = sizeof struct + map_x_size + headers (map_x_size)
-        // 3D map size = sizeof struct + (map_x_size * map_z_size) + headers (map_x_size * map_z_size)
+        furi_check(map->map_z_size > 1);
         map_mem_values_size *= map->map_z_size;
-        map_mem_keys_size *= map->map_z_size;
+        map_mem_keys_x_size *= map->map_z_size;
+        total_mem += map_mem_keys_z_size;
     }
-    return sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_size;
+    total_mem += sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_x_size;
+    return total_mem;
 }
 
 void flipper_ecu_map_free(FlipperECUMap* map) {

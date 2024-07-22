@@ -7,7 +7,7 @@ static FlipperECUApp* flipper_ecu_app_alloc(void) {
     app->gui = flipper_ecu_gui_alloc(app);
 
     app->engine_settings = flipper_ecu_engine_settings_alloc();
-    flipper_ecu_engine_settings_load(app->engine_settings);
+    flipper_ecu_engine_settings_load_d(app->engine_settings);
 
     app->sync_worker = flipper_ecu_sync_worker_alloc(&app->engine_status, app->engine_settings);
     return app;

@@ -38,7 +38,8 @@ void flipper_ecu_scene_settings_on_enter(void* context) {
         FlipperECUSceneSettingsSubmenuIndexSave,
         flipper_ecu_scene_settings_submenu_callback,
         app);
-    submenu_set_header(app->submenu, "Test");
+    submenu_set_header(
+        app->submenu, furi_string_get_cstr(app->ecu_app->engine_settings->file_path));
     submenu_set_selected_item(
         app->submenu, scene_manager_get_scene_state(app->scene_manager, FlipperECUSceneSettings));
     view_dispatcher_switch_to_view(app->view_dispatcher, FlipperECUGuiViewSubmenu);
