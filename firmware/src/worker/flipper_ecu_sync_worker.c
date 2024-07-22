@@ -3,6 +3,7 @@
 
 #include <furi_hal_resources.h>
 #include <furi_hal_bus.h>
+#include <furi_hal_power.h>
 #include <furi_hal_interrupt.h>
 #include <stm32wbxx_ll_tim.h>
 
@@ -194,6 +195,7 @@ static int32_t flipper_ecu_sync_worker_thread(void* arg) {
     uint32_t events;
     FuriString* fstr = furi_string_alloc();
     FURI_LOG_I(TAG, "thread started");
+    furi_hal_power_insomnia_enter();
     while(1) {
         events =
             furi_thread_flags_wait(FlipperECUSyncWorkerEventAll, FuriFlagWaitAny, FuriWaitForever);
@@ -216,6 +218,7 @@ static int32_t flipper_ecu_sync_worker_thread(void* arg) {
     }
     furi_string_free(fstr);
     FURI_LOG_I(TAG, "thread stopped");
+    furi_hal_power_insomnia_exit();
     return 0;
 }
 
