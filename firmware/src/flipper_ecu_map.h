@@ -9,11 +9,8 @@ typedef enum { FlipperECUMapType2D = 0, FlipperECUMapType3D = 0x01 } FlipperECUM
 
 typedef struct FlipperECUMap FlipperECUMap;
 
-FlipperECUMap* flipper_ecu_map_create_alloc(
-    FlipperECUMapType type,
-    uint8_t map_x_size,
-    uint8_t map_z_size // no care for 2D maps
-);
+FlipperECUMap* flipper_ecu_map_create_alloc_2d(uint8_t map_x_size);
+FlipperECUMap* flipper_ecu_map_create_alloc_3d(uint8_t map_x_size, uint8_t map_z_size);
 void flipper_ecu_map_free(FlipperECUMap* map);
 void flipper_ecu_map_set_names_2d(
     FlipperECUMap* map,
@@ -52,3 +49,4 @@ const char* flipper_ecu_map_get_z_name_3d(FlipperECUMap* map);
 const char* flipper_ecu_map_get_values_name(FlipperECUMap* map);
 FlipperECUMapType flipper_ecu_map_get_map_type(FlipperECUMap* map);
 int16_t flipper_ecu_map_interpolate_2d(FlipperECUMap* map, int16_t key_x);
+uint32_t flipper_ecu_map_get_mem_size(FlipperECUMap* map);

@@ -3,7 +3,8 @@
 
 void flipper_ecu_scene_map_editor_on_enter(void* context) {
     FlipperECUGui* app = context;
-    flipper_ecu_view_map_editor_load_map(app->view_map_editor, app->ecu_app->adj->ign_tps_map);
+    flipper_ecu_view_map_editor_load_map(
+        app->view_map_editor, app->ecu_app->engine_settings->adj.ign_tps_map);
     view_dispatcher_switch_to_view(app->view_dispatcher, FlipperECUGuiViewMapEditor);
 }
 

@@ -2,10 +2,8 @@
 
 typedef enum {
     FlipperECUSceneStartSubmenuIndexDashboard,
-    FlipperECUSceneStartSubmenuIndexAdjustments,
-    FlipperECUSceneStartSubmenuIndexConfig,
+    FlipperECUSceneStartSubmenuIndexSettings,
     FlipperECUSceneStartSubmenuIndexManual,
-    FlipperECUSceneStartSubmenuIndexSaved,
     FlipperECUSceneStartSubmenuIndexAbout
 } FlipperECUSceneStartSubmenuIndex;
 
@@ -24,26 +22,14 @@ void flipper_ecu_scene_start_on_enter(void* context) {
         app);
     submenu_add_item(
         app->submenu,
-        "Adjustments",
-        FlipperECUSceneStartSubmenuIndexAdjustments,
-        flipper_ecu_scene_start_submenu_callback,
-        app);
-    submenu_add_item(
-        app->submenu,
-        "Configuration",
-        FlipperECUSceneStartSubmenuIndexConfig,
+        "Settings",
+        FlipperECUSceneStartSubmenuIndexSettings,
         flipper_ecu_scene_start_submenu_callback,
         app);
     submenu_add_item(
         app->submenu,
         "Manual control",
         FlipperECUSceneStartSubmenuIndexManual,
-        flipper_ecu_scene_start_submenu_callback,
-        app);
-    submenu_add_item(
-        app->submenu,
-        "Saved",
-        FlipperECUSceneStartSubmenuIndexSaved,
         flipper_ecu_scene_start_submenu_callback,
         app);
     submenu_add_item(
@@ -62,20 +48,14 @@ bool flipper_ecu_scene_start_on_event(void* context, SceneManagerEvent event) {
     bool success = false;
     if(event.type == SceneManagerEventTypeCustom) {
         scene_manager_set_scene_state(app->scene_manager, FlipperECUSceneStart, event.event);
-        if(event.event == FlipperECUSceneStartSubmenuIndexConfig) {
-            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfig);
+        if(event.event == FlipperECUSceneStartSubmenuIndexSettings) {
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneSettings);
             success = true;
-        }
-        if(event.event == FlipperECUSceneStartSubmenuIndexAbout) {
+        } else if(event.event == FlipperECUSceneStartSubmenuIndexAbout) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneAbout);
             success = true;
-        }
-        if(event.event == FlipperECUSceneStartSubmenuIndexDashboard) {
+        } else if(event.event == FlipperECUSceneStartSubmenuIndexDashboard) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneDashboard);
-            success = true;
-        }
-        if(event.event == FlipperECUSceneStartSubmenuIndexAdjustments) {
-            scene_manager_next_scene(app->scene_manager, FlipperECUSceneMapEditor);
             success = true;
         }
     }

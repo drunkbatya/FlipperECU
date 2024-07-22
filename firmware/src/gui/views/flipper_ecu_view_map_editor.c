@@ -228,27 +228,27 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
                 int16_t selected_z_key = flipper_ecu_map_get_key_z_by_index_3d(
                     map_editor_model->map, map_editor_model->selected_z_dot);
                 const char* fmt = NULL;
-                if (map_editor_model->selected_z_dot < flipper_ecu_map_get_map_z_size_3d(map_editor_model->map) - 1) {
-                    if (map_editor_model->selected_z_dot > 0) {
+                if(map_editor_model->selected_z_dot <
+                   flipper_ecu_map_get_map_z_size_3d(map_editor_model->map) - 1) {
+                    if(map_editor_model->selected_z_dot > 0) {
                         fmt = "< %s: %d >";
                     } else {
                         fmt = "%s: %d >";
                     }
                 } else {
-                    if (map_editor_model->selected_z_dot > 0) {
+                    if(map_editor_model->selected_z_dot > 0) {
                         fmt = "< %s: %d";
                     } else {
                         fmt = "%s: %d";
                     }
                 }
-                furi_string_printf(fstr, fmt, flipper_ecu_map_get_z_name_3d(map_editor_model->map), selected_z_key);
+                furi_string_printf(
+                    fstr,
+                    fmt,
+                    flipper_ecu_map_get_z_name_3d(map_editor_model->map),
+                    selected_z_key);
                 canvas_draw_str_aligned(
-                    canvas,
-                    0,
-                    DISPLAY_HEIGHT,
-                    AlignLeft,
-                    AlignBottom,
-                    furi_string_get_cstr(fstr));
+                    canvas, 0, DISPLAY_HEIGHT, AlignLeft, AlignBottom, furi_string_get_cstr(fstr));
             }
         }
     }
@@ -272,13 +272,14 @@ static bool flipper_ecu_view_map_editor_input_callback(InputEvent* event, void* 
                     if(event->key == InputKeyOk) {
                         model->edit_mode = true;
                         consumed = true;
-                    } else if (flipper_ecu_map_get_map_type(model->map) == FlipperECUMapType3D) {
+                    } else if(flipper_ecu_map_get_map_type(model->map) == FlipperECUMapType3D) {
                         if(event->key == InputKeyRight) {
-                            if (model->selected_z_dot < flipper_ecu_map_get_map_z_size_3d(model->map) - 1) {
+                            if(model->selected_z_dot <
+                               flipper_ecu_map_get_map_z_size_3d(model->map) - 1) {
                                 model->selected_z_dot += 1;
                             }
                         } else if(event->key == InputKeyLeft) {
-                            if (model->selected_z_dot > 0) {
+                            if(model->selected_z_dot > 0) {
                                 model->selected_z_dot -= 1;
                             }
                         }

@@ -142,40 +142,59 @@ int16_t flipper_ecu_map_get_value_max(FlipperECUMap* map) {
     return map->value_max;
 }
 
-FlipperECUMap* flipper_ecu_map_create_alloc(
-    FlipperECUMapType type,
-    uint8_t map_x_size,
-    uint8_t map_z_size // no care for 2D maps
-) {
+FlipperECUMap* flipper_ecu_map_create_alloc_2d(uint8_t map_x_size) {
     furi_check(map_x_size > 1);
-    uint16_t map_mem_keys_size = map_x_size * sizeof(int16_t);
-    uint16_t map_mem_values_size = map_x_size * sizeof(int16_t);
-    uint16_t map_mem_keys_x_size = map_x_size * sizeof(int16_t);
-    if(type == FlipperECUMapType3D) {
-        furi_check(map_z_size > 1); // i think nobody wants a 1-layer'ed 3D map
-        // 2D map size = sizeof struct + map_x_size + headers (map_x_size)
-        // 3D map size = sizeof struct + (map_x_size * map_z_size) + headers (map_x_size * map_z_size)
-        map_mem_values_size *= map_z_size;
-        map_mem_keys_size *= map_z_size;
-    }
+    const uint16_t map_mem_keys_size = map_x_size * sizeof(int16_t);
+    const uint16_t map_mem_values_size = map_x_size * sizeof(int16_t);
+
     void* map_mem = malloc(sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_size);
     FlipperECUMap* map = (FlipperECUMap*)map_mem;
 
-    map->type = type;
+    map->type = FlipperECUMapType2D;
+    map->map_x_size = map_x_size;
+    map->values = (map_mem + sizeof(FlipperECUMap));
+    map->keys_x = (map_mem + sizeof(FlipperECUMap) + map_mem_values_size);
+    map->map_z_size = 0;
+    map->keys_z = NULL;
+
+    return map;
+}
+
+FlipperECUMap* flipper_ecu_map_create_alloc_3d(uint8_t map_x_size, uint8_t map_z_size) {
+    furi_check(map_x_size > 1);
+    furi_check(map_z_size > 1); // i think nobody wants a 1-layer'ed 3D map
+    // 2D map size = sizeof struct + map_x_size + headers (map_x_size)
+    // 3D map size = sizeof struct + (map_x_size * map_z_size) + headers (map_x_size * map_z_size) + keys_z (map_z_size)
+    const uint16_t map_mem_keys_x_size = map_x_size * sizeof(int16_t);
+    const uint16_t map_mem_keys_z_size = map_z_size * sizeof(int16_t);
+    const uint16_t map_mem_values_size = map_x_size * map_z_size * sizeof(int16_t);
+
+    void* map_mem = malloc(
+        sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_x_size + map_mem_keys_z_size);
+    FlipperECUMap* map = (FlipperECUMap*)map_mem;
+
+    map->type = FlipperECUMapType3D;
     map->map_x_size = map_x_size;
     map->values = (map_mem + sizeof(FlipperECUMap));
     map->keys_x = (map_mem + sizeof(FlipperECUMap) + map_mem_values_size);
 
-    if(type == FlipperECUMapType3D) {
-        map->map_z_size = map_z_size;
-        map->keys_z =
-            (map_mem + sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_x_size);
-    } else {
-        map->map_z_size = 0;
-        map->keys_z = NULL;
-    }
+    map->map_z_size = map_z_size;
+    map->keys_z = (map_mem + sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_x_size);
 
     return map;
+}
+
+uint32_t flipper_ecu_map_get_mem_size(FlipperECUMap* map) {
+    uint16_t map_mem_keys_size = map->map_x_size * sizeof(int16_t);
+    uint16_t map_mem_values_size = map->map_x_size * sizeof(int16_t);
+    if(map->type == FlipperECUMapType3D) {
+        furi_check(map->map_z_size > 1); // i think nobody wants a 1-layer'ed 3D map
+        // 2D map size = sizeof struct + map_x_size + headers (map_x_size)
+        // 3D map size = sizeof struct + (map_x_size * map_z_size) + headers (map_x_size * map_z_size)
+        map_mem_values_size *= map->map_z_size;
+        map_mem_keys_size *= map->map_z_size;
+    }
+    return sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_size;
 }
 
 void flipper_ecu_map_free(FlipperECUMap* map) {

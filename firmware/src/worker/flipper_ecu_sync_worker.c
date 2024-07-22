@@ -56,8 +56,8 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     uint32_t period_per_tooth = worker->previous_period;
     worker->engine_status->synced = true;
     worker->engine_status->rpm = SystemCoreClock / period_per_tooth;
-    worker->engine_status->ign_angle =
-        flipper_ecu_map_interpolate_2d(worker->engine_adj->ign_map, worker->engine_status->rpm);
+    worker->engine_status->ign_angle = flipper_ecu_map_interpolate_2d(
+        worker->engine_settings->adj.ign_map, worker->engine_status->rpm);
     uint32_t timer_ticks_to_tdc_cylinder_1_4 =
         (period_per_tooth * FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO);
     uint32_t ign_delay_cylinder_1_4 =
@@ -104,7 +104,7 @@ static inline void
         } else { // basic tick
             worker->engine_status->rpm = SystemCoreClock / worker->current_period;
             worker->engine_status->ign_angle = flipper_ecu_map_interpolate_2d(
-                worker->engine_adj->ign_map, worker->engine_status->rpm);
+                worker->engine_settings->adj.ign_map, worker->engine_status->rpm);
         }
     }
 }
@@ -399,14 +399,14 @@ void flipper_ecu_sync_worker_load_engine_config(FlipperECUSyncWorker* worker) {
 
 FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(
     FlipperECUEngineStatus* engine_status,
-    FlipperECUEngineAdjustments* engine_adj) {
+    FlipperECUEngineSettings* engine_settings) {
     FlipperECUSyncWorker* worker = malloc(sizeof(FlipperECUSyncWorker));
 
     worker->thread = furi_thread_alloc_ex(TAG, 4092, flipper_ecu_sync_worker_thread, worker);
     worker->current_period = 0;
     worker->previous_period = 0;
     worker->engine_status = engine_status;
-    worker->engine_adj = engine_adj;
+    worker->engine_settings = engine_settings;
     flipper_ecu_sync_worker_load_engine_config(worker);
     worker->engine_status->synced = false;
     worker->engine_status->rpm = 0;
