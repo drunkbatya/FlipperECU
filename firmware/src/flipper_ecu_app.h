@@ -2,7 +2,7 @@
 
 #include <furi.h>
 #include "gui/flipper_ecu_gui.h"
-#include "worker/flipper_ecu_sync_worker.h"
+#include "workers/sync_worker/flipper_ecu_sync_worker.h"
 
 #include "flipper_ecu_engine_status.h"
 

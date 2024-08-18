@@ -4,14 +4,19 @@
 
 #include <furi.h>
 #include <gui/gui.h>
-#include <gui/modules/submenu.h>
 #include <gui/view_dispatcher.h>
+#include <gui/modules/submenu.h>
 #include <gui/modules/widget.h>
+#include <gui/modules/popup.h>
+#include <gui/modules/text_input.h>
 #include <gui/modules/variable_item_list.h>
+#include <dialogs/dialogs.h>
 #include "scenes/config/flipper_ecu_scene.h"
 #include "views/flipper_ecu_view_dashboard.h"
 #include "views/flipper_ecu_view_map_editor.h"
 #include "../flipper_ecu_app.h"
+
+#define FLIPPER_ECU_TEXT_BUFFER_SIZE 100
 
 struct FlipperECUGui {
     FuriThread* thread;
@@ -22,6 +27,11 @@ struct FlipperECUGui {
     SceneManager* scene_manager;
     Submenu* submenu;
     Widget* widget;
+    Popup* popup;
+    DialogsApp* dialogs;
+    FuriString* file_path;
+    TextInput* text_input;
+    char text_buffer[FLIPPER_ECU_TEXT_BUFFER_SIZE + 1];
     VariableItemList* var_item_list;
     FlipperECUDashboardView* view_dashboard;
     FlipperECUMapEditorView* view_map_editor;
@@ -31,6 +41,13 @@ typedef enum {
     FlipperECUGuiViewSubmenu,
     FlipperECUGuiViewWidget,
     FlipperECUGuiViewVarItemList,
+    FlipperECUGuiViewPopup,
+    FlipperECUGuiViewTextInput,
     FlipperECUGuiViewDashboard,
     FlipperECUGuiViewMapEditor,
 } FlipperECUGuiView;
+
+typedef enum {
+    FlipperECUGuiCustomEventPopupBack,
+    FlipperECUGuiCustomEventTextEditResult
+} FlipperECUGUICustomEvent;

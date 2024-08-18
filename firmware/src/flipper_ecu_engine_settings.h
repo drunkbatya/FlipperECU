@@ -5,17 +5,14 @@
 
 #include "flipper_ecu_map.h"
 
-typedef struct {
-    FlipperECUMap* ign_map;
-    FlipperECUMap* ign_tps_map;
-} FlipperECUEngineSettingsMaps;
+#define ENGINE_SETTINGS_FILE_EXT ".ass"
+
+typedef enum { IGN_MAP, IGN_TPS_MAP, IGN_MAP_COUNT } FlipperECUEngineSettingsMaps;
 
 typedef struct {
-    FlipperECUEngineSettingsMaps maps;
-    FuriString* file_path;
+    FlipperECUMap* maps[IGN_MAP_COUNT];
 } FlipperECUEngineSettings;
 
 void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set);
 FlipperECUEngineSettings* flipper_ecu_engine_settings_alloc(void);
 void flipper_ecu_engine_settings_free(FlipperECUEngineSettings* set);
-bool flipper_ecu_engine_settings_save(FlipperECUEngineSettings* set);

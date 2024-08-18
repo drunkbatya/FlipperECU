@@ -1,6 +1,7 @@
 #pragma once
 
 #include <furi.h>
+#include <storage/storage.h>
 
 #define MAP_NAME_SIZE 20 + 1
 #define X_Y_NAME_SIZE 11 + 1
@@ -50,3 +51,5 @@ const char* flipper_ecu_map_get_values_name(FlipperECUMap* map);
 FlipperECUMapType flipper_ecu_map_get_map_type(FlipperECUMap* map);
 int16_t flipper_ecu_map_interpolate_2d(FlipperECUMap* map, int16_t key_x);
 uint32_t flipper_ecu_map_get_mem_size(FlipperECUMap* map);
+bool flipper_ecu_map_load(FlipperECUMap* map, File* file);
+bool flipper_ecu_map_save(FlipperECUMap* map, File* file);

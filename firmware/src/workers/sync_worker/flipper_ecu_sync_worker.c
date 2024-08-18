@@ -57,7 +57,7 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     worker->engine_status->synced = true;
     worker->engine_status->rpm = SystemCoreClock / period_per_tooth;
     worker->engine_status->ign_angle = flipper_ecu_map_interpolate_2d(
-        worker->engine_settings->maps.ign_map, worker->engine_status->rpm);
+        worker->engine_settings->maps[IGN_MAP], worker->engine_status->rpm);
     uint32_t timer_ticks_to_tdc_cylinder_1_4 =
         (period_per_tooth * FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO);
     uint32_t ign_delay_cylinder_1_4 =
@@ -104,7 +104,7 @@ static inline void
         } else { // basic tick
             worker->engine_status->rpm = SystemCoreClock / worker->current_period;
             worker->engine_status->ign_angle = flipper_ecu_map_interpolate_2d(
-                worker->engine_settings->maps.ign_map, worker->engine_status->rpm);
+                worker->engine_settings->maps[IGN_MAP], worker->engine_status->rpm);
         }
     }
 }

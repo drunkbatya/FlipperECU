@@ -234,3 +234,26 @@ int16_t flipper_ecu_map_interpolate_2d(FlipperECUMap* map, int16_t key_x) {
 FlipperECUMapType flipper_ecu_map_get_map_type(FlipperECUMap* map) {
     return map->type;
 }
+
+bool flipper_ecu_map_load(FlipperECUMap* map, File* file) {
+    if(map->type == FlipperECUMapType3D) return true; // temp!
+    uint32_t size = flipper_ecu_map_get_mem_size(map);
+    if(storage_file_read(file, (void*)map, size) != size) return false;
+    void* map_mem = map;
+
+    // restoring pointers
+    const uint16_t map_mem_keys_x_size = map->map_x_size * sizeof(int16_t);
+    const uint16_t map_mem_values_size = map->map_x_size * map->map_z_size * sizeof(int16_t);
+    map->values = (map_mem + sizeof(FlipperECUMap));
+    map->keys_x = (map_mem + sizeof(FlipperECUMap) + map_mem_values_size);
+    if(map->type == FlipperECUMapType3D) {
+        map->keys_z =
+            (map_mem + sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_x_size);
+    }
+
+    return true;
+}
+bool flipper_ecu_map_save(FlipperECUMap* map, File* file) {
+    uint32_t size = flipper_ecu_map_get_mem_size(map);
+    return (storage_file_write(file, (void*)map, size) == size);
+}
