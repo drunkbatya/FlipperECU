@@ -185,7 +185,6 @@ FlipperECUMap* flipper_ecu_map_create_alloc_3d(uint8_t map_x_size, uint8_t map_z
 }
 
 uint32_t flipper_ecu_map_get_mem_size(FlipperECUMap* map) {
-    const uint16_t map_mem_keys_z_size = map->map_z_size * sizeof(int16_t);
     uint16_t map_mem_keys_x_size = map->map_x_size * sizeof(int16_t);
     uint16_t map_mem_values_size = map->map_x_size * sizeof(int16_t);
 
@@ -193,7 +192,7 @@ uint32_t flipper_ecu_map_get_mem_size(FlipperECUMap* map) {
     if(map->type == FlipperECUMapType3D) {
         furi_check(map->map_z_size > 1);
         map_mem_values_size *= map->map_z_size;
-        map_mem_keys_x_size *= map->map_z_size;
+        const uint16_t map_mem_keys_z_size = map->map_z_size * sizeof(int16_t);
         total_mem += map_mem_keys_z_size;
     }
     total_mem += sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_x_size;
@@ -236,7 +235,6 @@ FlipperECUMapType flipper_ecu_map_get_map_type(FlipperECUMap* map) {
 }
 
 bool flipper_ecu_map_load(FlipperECUMap* map, File* file) {
-    if(map->type == FlipperECUMapType3D) return true; // temp!
     uint32_t size = flipper_ecu_map_get_mem_size(map);
     if(storage_file_read(file, (void*)map, size) != size) return false;
     void* map_mem = map;
