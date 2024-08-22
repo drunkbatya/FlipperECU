@@ -1,6 +1,6 @@
-#include "../flipper_ecu_gui_i.h"
-#include "../../flipper_ecu_engine_settings.h"
-#include "../../flipper_ecu_files.h"
+#include "../../../../flipper_ecu_gui_i.h"
+#include "../../../../../flipper_ecu_engine_settings.h"
+#include "../../../../../flipper_ecu_files.h"
 #include <toolbox/name_generator.h>
 
 static void flipper_ecu_scene_save_set_opened_file_name(FlipperECUGui* app) {

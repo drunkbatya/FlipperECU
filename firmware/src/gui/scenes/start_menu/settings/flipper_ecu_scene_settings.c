@@ -1,4 +1,4 @@
-#include "../flipper_ecu_gui_i.h"
+#include "../../../flipper_ecu_gui_i.h"
 
 typedef enum {
     FlipperECUSceneSettingsSubmenuIndexAdjustments,

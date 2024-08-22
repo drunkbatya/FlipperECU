@@ -1,4 +1,4 @@
-#include "../flipper_ecu_gui_i.h"
+#include "../../../flipper_ecu_gui_i.h"
 
 void flipper_ecu_scene_dashboard_on_enter(void* context) {
     FlipperECUGui* app = context;

@@ -421,7 +421,7 @@ const FlipperECUEngineConfig* flipper_ecu_sync_worker_get_config(FlipperECUSyncW
     return &(worker->engine_config);
 }
 
-void flipper_ecu_sync_worker_update_config(
+void flipper_ecu_sync_worker_update_config_restart(
     FlipperECUSyncWorker* worker,
     const FlipperECUEngineConfig* config) {
     flipper_ecu_sync_worker_send_stop(worker);
@@ -430,6 +430,12 @@ void flipper_ecu_sync_worker_update_config(
         worker->engine_config.ckps_polarity = config->ckps_polarity;
     }
     flipper_ecu_sync_worker_start(worker);
+}
+
+void flipper_ecu_sync_worker_load_config(
+    FlipperECUSyncWorker* worker,
+    const FlipperECUEngineConfig* config) {
+    memcpy(&worker->engine_config, config, sizeof(FlipperECUEngineConfig));
 }
 
 void flipper_ecu_sync_worker_free(FlipperECUSyncWorker* worker) {

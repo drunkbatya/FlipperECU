@@ -1,7 +1,7 @@
-#include "../flipper_ecu_gui_i.h"
+#include "../../../../flipper_ecu_gui_i.h"
 
 typedef enum {
-    FlipperECUSceneConfigSubmenuIndexCKPS,
+    FlipperECUSceneConfigSubmenuIndexSync,
 } FlipperECUSceneConfigSubmenuIndex;
 
 static void flipper_ecu_scene_config_submenu_callback(void* context, uint32_t index) {
@@ -13,8 +13,8 @@ void flipper_ecu_scene_config_on_enter(void* context) {
     FlipperECUGui* app = context;
     submenu_add_item(
         app->submenu,
-        "CKPS",
-        FlipperECUSceneConfigSubmenuIndexCKPS,
+        "Synhronization",
+        FlipperECUSceneConfigSubmenuIndexSync,
         flipper_ecu_scene_config_submenu_callback,
         app);
     submenu_set_selected_item(
@@ -27,8 +27,8 @@ bool flipper_ecu_scene_config_on_event(void* context, SceneManagerEvent event) {
     bool success = false;
     if(event.type == SceneManagerEventTypeCustom) {
         scene_manager_set_scene_state(app->scene_manager, FlipperECUSceneConfig, event.event);
-        if(event.event == FlipperECUSceneConfigSubmenuIndexCKPS) {
-            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigCKPS);
+        if(event.event == FlipperECUSceneConfigSubmenuIndexSync) {
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigSync);
             success = true;
         }
     }

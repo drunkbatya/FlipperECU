@@ -65,6 +65,9 @@ void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker);
 void flipper_ecu_sync_worker_free(FlipperECUSyncWorker* worker);
 uint32_t flipper_ecu_sync_worker_get_rpm(FlipperECUSyncWorker* worker);
 const FlipperECUEngineConfig* flipper_ecu_sync_worker_get_config(FlipperECUSyncWorker* worker);
-void flipper_ecu_sync_worker_update_config(
+void flipper_ecu_sync_worker_update_config_restart(
+    FlipperECUSyncWorker* worker,
+    const FlipperECUEngineConfig* config);
+void flipper_ecu_sync_worker_load_config(
     FlipperECUSyncWorker* worker,
     const FlipperECUEngineConfig* config);

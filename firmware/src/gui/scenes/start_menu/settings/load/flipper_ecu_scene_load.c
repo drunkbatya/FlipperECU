@@ -2,9 +2,9 @@
 #include <dialogs/dialogs.h>
 #include "flipper_ecu_icons.h"
 
-#include "../flipper_ecu_gui_i.h"
-#include "../../flipper_ecu_engine_settings.h"
-#include "../../flipper_ecu_files.h"
+#include "../../../../flipper_ecu_gui_i.h"
+#include "../../../../../flipper_ecu_engine_settings.h"
+#include "../../../../../flipper_ecu_files.h"
 
 void flipper_ecu_scene_load_on_enter(void* context) {
     FlipperECUGui* app = context;

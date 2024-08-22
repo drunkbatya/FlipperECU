@@ -1,4 +1,4 @@
-#include "../flipper_ecu_gui_i.h"
+#include "../../../flipper_ecu_gui_i.h"
 
 #define VERSION_APP "0.0.1"
 #define DEVELOPER "DrunkBatya"

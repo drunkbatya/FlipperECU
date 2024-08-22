@@ -18,6 +18,20 @@ static bool flipper_ecu_files_load_maps(FlipperECUApp* app, File* file) {
     return true;
 }
 
+static bool flipper_ecu_files_save_config(FlipperECUApp* app, File* file) {
+    const FlipperECUEngineConfig* config = flipper_ecu_sync_worker_get_config(app->sync_worker);
+    size_t size = sizeof(FlipperECUEngineConfig);
+    return (storage_file_write(file, (void*)config, size) == size);
+}
+
+static bool flipper_ecu_files_load_config(FlipperECUApp* app, File* file) {
+    FlipperECUEngineConfig config = {0};
+    size_t size = sizeof(FlipperECUEngineConfig);
+    if(!(storage_file_read(file, (void*)(&config), size) == size)) return false;
+    flipper_ecu_sync_worker_load_config(app->sync_worker, &config);
+    return true;
+}
+
 bool flipper_ecu_files_save(FlipperECUApp* app) {
     bool success = false;
     Storage* storage = furi_record_open(RECORD_STORAGE);
@@ -33,7 +47,9 @@ bool flipper_ecu_files_save(FlipperECUApp* app) {
         if(!storage_file_open(
                file, furi_string_get_cstr(app->gui->file_path), FSAM_WRITE, FSOM_CREATE_NEW))
             break;
+
         if(!flipper_ecu_files_save_maps(app, file)) break;
+        if(!flipper_ecu_files_save_config(app, file)) break;
 
         success = true;
     } while(false);
@@ -55,6 +71,7 @@ bool flipper_ecu_files_load(FlipperECUApp* app) {
                file, furi_string_get_cstr(app->gui->file_path), FSAM_READ, FSOM_OPEN_EXISTING))
             break;
         if(!flipper_ecu_files_load_maps(app, file)) break;
+        if(!flipper_ecu_files_load_config(app, file)) break;
         success = true;
     } while(false);
 
