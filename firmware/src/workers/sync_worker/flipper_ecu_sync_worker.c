@@ -7,9 +7,6 @@
 #include <furi_hal_interrupt.h>
 #include <stm32wbxx_ll_tim.h>
 
-// debug
-#include <furi_hal_pwm.h>
-
 #define TAG "FlipperECUSyncWorker"
 
 #define GPIO_IGNITION_PIN_1 &gpio_ext_pe4
@@ -225,9 +222,6 @@ static int32_t flipper_ecu_sync_worker_thread(void* arg) {
 void flipper_ecu_sync_worker_send_stop(FlipperECUSyncWorker* worker) {
     flipper_ecu_sync_worker_gpio_timer_deinit(worker);
     flipper_ecu_sync_worker_ckps_timer_deinit(worker);
-    if(furi_hal_pwm_is_running(FuriHalPwmOutputIdLptim2PA4)) {
-        furi_hal_pwm_stop(FuriHalPwmOutputIdLptim2PA4);
-    }
 
     furi_thread_flags_set(furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventStop);
 }
@@ -386,11 +380,6 @@ void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
     furi_delay_tick(1);
     flipper_ecu_sync_worker_ckps_timer_init(worker);
     flipper_ecu_sync_worker_gpio_timer_init(worker);
-
-    if(furi_hal_pwm_is_running(FuriHalPwmOutputIdLptim2PA4)) {
-        furi_hal_pwm_stop(FuriHalPwmOutputIdLptim2PA4);
-    }
-    furi_hal_pwm_start(FuriHalPwmOutputIdLptim2PA4, 1000, 50);
 }
 
 void flipper_ecu_sync_worker_load_engine_config(FlipperECUSyncWorker* worker) {
