@@ -1,6 +1,7 @@
 ADD_SCENE(flipper_ecu, start, Start)
 ADD_SCENE(flipper_ecu, config, Config)
-ADD_SCENE(flipper_ecu, config_sync, ConfigSync)
+ADD_SCENE(flipper_ecu, config_ckps, ConfigCKPS)
+ADD_SCENE(flipper_ecu, config_sensors, ConfigSensors)
 ADD_SCENE(flipper_ecu, about, About)
 ADD_SCENE(flipper_ecu, dashboard, Dashboard)
 ADD_SCENE(flipper_ecu, map_editor, MapEditor)
