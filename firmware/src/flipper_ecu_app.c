@@ -10,12 +10,14 @@ static FlipperECUApp* flipper_ecu_app_alloc(void) {
     flipper_ecu_engine_settings_load_d(app->engine_settings);
 
     app->sync_worker = flipper_ecu_sync_worker_alloc(&app->engine_status, app->engine_settings);
+    app->adc_worker = flipper_ecu_adc_worker_alloc();
     return app;
 }
 
 static void flipper_ecu_app_free(FlipperECUApp* app) {
     furi_assert(app);
     flipper_ecu_sync_worker_free(app->sync_worker);
+    flipper_ecu_adc_worker_free(app->adc_worker);
     flipper_ecu_engine_settings_free(app->engine_settings);
 
     flipper_ecu_gui_free(app->gui);
@@ -28,12 +30,15 @@ int32_t flipper_ecu_app(void* p) {
     FlipperECUApp* app = flipper_ecu_app_alloc();
 
     flipper_ecu_gui_start(app->gui);
+    flipper_ecu_adc_worker_start(app->adc_worker);
     flipper_ecu_sync_worker_start(app->sync_worker);
 
     flipper_ecu_gui_await_stop(app->gui);
 
     flipper_ecu_sync_worker_send_stop(app->sync_worker);
     flipper_ecu_sync_worker_await_stop(app->sync_worker);
+    flipper_ecu_adc_worker_send_stop(app->adc_worker);
+    flipper_ecu_adc_worker_await_stop(app->adc_worker);
 
     flipper_ecu_app_free(app);
     return 0;

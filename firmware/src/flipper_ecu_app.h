@@ -2,13 +2,16 @@
 
 #include <furi.h>
 #include "gui/flipper_ecu_gui.h"
+
 #include "workers/sync_worker/flipper_ecu_sync_worker.h"
+#include "workers/adc_worker/flipper_ecu_adc_worker.h"
 
 #include "flipper_ecu_engine_status.h"
 
 typedef struct {
     FlipperECUGui* gui;
     FlipperECUSyncWorker* sync_worker;
+    FlipperECUAdcWorker* adc_worker;
     FlipperECUEngineStatus engine_status;
     FlipperECUEngineSettings* engine_settings;
 } FlipperECUApp;

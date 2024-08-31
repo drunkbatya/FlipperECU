@@ -377,7 +377,7 @@ static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker
 void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
     GPIO_QUEUE_RESET(worker);
     furi_thread_start(worker->thread);
-    furi_delay_tick(1);
+    furi_delay_tick(10);
     flipper_ecu_sync_worker_ckps_timer_init(worker);
     flipper_ecu_sync_worker_gpio_timer_init(worker);
 }
