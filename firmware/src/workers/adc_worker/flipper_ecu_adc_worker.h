@@ -2,7 +2,7 @@
 
 #include <furi.h>
 
-#define ADC_BUFFER_SIZE 22
+#define ADC_BUFFER_SIZE 6
 
 typedef struct {
     FuriThread* thread;

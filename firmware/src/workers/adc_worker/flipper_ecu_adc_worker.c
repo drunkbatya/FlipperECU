@@ -10,32 +10,9 @@
 #include <stm32wbxx_ll_dmamux.h>
 #include <stm32wbxx_ll_system.h>
 
-#define TAG "FlipperECUAdcWorker"
+#include "../../flipper_ecu_resources.h"
 
-static const uint32_t furi_hal_adc_channel_map[] = {
-    [FuriHalAdcChannel0] = LL_ADC_CHANNEL_0,
-    [FuriHalAdcChannel1] = LL_ADC_CHANNEL_1,
-    [FuriHalAdcChannel2] = LL_ADC_CHANNEL_2,
-    [FuriHalAdcChannel3] = LL_ADC_CHANNEL_3,
-    [FuriHalAdcChannel4] = LL_ADC_CHANNEL_4,
-    [FuriHalAdcChannel5] = LL_ADC_CHANNEL_5,
-    [FuriHalAdcChannel6] = LL_ADC_CHANNEL_6,
-    [FuriHalAdcChannel7] = LL_ADC_CHANNEL_7,
-    [FuriHalAdcChannel8] = LL_ADC_CHANNEL_8,
-    [FuriHalAdcChannel9] = LL_ADC_CHANNEL_9,
-    [FuriHalAdcChannel10] = LL_ADC_CHANNEL_10,
-    [FuriHalAdcChannel11] = LL_ADC_CHANNEL_11,
-    [FuriHalAdcChannel12] = LL_ADC_CHANNEL_12,
-    [FuriHalAdcChannel13] = LL_ADC_CHANNEL_13,
-    [FuriHalAdcChannel14] = LL_ADC_CHANNEL_14,
-    [FuriHalAdcChannel15] = LL_ADC_CHANNEL_15,
-    [FuriHalAdcChannel16] = LL_ADC_CHANNEL_16,
-    [FuriHalAdcChannel17] = LL_ADC_CHANNEL_17,
-    [FuriHalAdcChannel18] = LL_ADC_CHANNEL_18,
-    [FuriHalAdcChannelVREFINT] = LL_ADC_CHANNEL_VREFINT,
-    [FuriHalAdcChannelTEMPSENSOR] = LL_ADC_CHANNEL_TEMPSENSOR,
-    [FuriHalAdcChannelVBAT] = LL_ADC_CHANNEL_VBAT,
-};
+#define TAG "FlipperECUAdcWorker"
 
 static void flipper_ecu_adc_worker_dma_callback(void* context) {
     FlipperECUAdcWorker* worker = context;
@@ -57,7 +34,7 @@ static void flipper_ecu_adc_worker_dma_init(FlipperECUAdcWorker* worker) {
     init_struct.MemoryOrM2MDstIncMode = LL_DMA_MEMORY_INCREMENT;
     init_struct.PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_HALFWORD;
     init_struct.MemoryOrM2MDstDataSize = LL_DMA_MDATAALIGN_HALFWORD;
-    init_struct.NbData = 2;
+    init_struct.NbData = gpio_adc_pins_size;
     init_struct.PeriphRequest = LL_DMAMUX_REQ_ADC1;
     init_struct.Priority = LL_DMA_PRIORITY_HIGH;
     furi_check(LL_DMA_Init(DMA2, LL_DMA_CHANNEL_1, &init_struct) == SUCCESS);
@@ -108,7 +85,7 @@ static void flipper_ecu_adc_worker_adc_init(FlipperECUAdcWorker* worker) {
 
     LL_ADC_REG_InitTypeDef reg_init_struct = {0};
     reg_init_struct.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
-    reg_init_struct.SequencerLength = LL_ADC_REG_SEQ_SCAN_ENABLE_2RANKS;
+    reg_init_struct.SequencerLength = LL_ADC_REG_SEQ_SCAN_ENABLE_6RANKS;
     reg_init_struct.SequencerDiscont = LL_ADC_REG_SEQ_DISCONT_DISABLE;
     reg_init_struct.ContinuousMode = LL_ADC_REG_CONV_SINGLE;
     reg_init_struct.DMATransfer = LL_ADC_REG_DMA_TRANSFER_UNLIMITED;
@@ -118,24 +95,49 @@ static void flipper_ecu_adc_worker_adc_init(FlipperECUAdcWorker* worker) {
     LL_ADC_SetOverSamplingScope(ADC1, LL_ADC_OVS_GRP_REGULAR_CONTINUED);
     LL_ADC_ConfigOverSamplingRatioShift(ADC1, LL_ADC_OVS_RATIO_64, LL_ADC_OVS_SHIFT_RIGHT_6);
 
-    //
-    LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_1, LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_1, LL_ADC_CHANNEL_1);
-    LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_1, LL_ADC_SINGLE_ENDED);
+    // Gpio Analog Pins
+    LL_ADC_SetChannelSamplingTime(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_1_MAP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
+    LL_ADC_REG_SetSequencerRanks(
+        ADC1, LL_ADC_REG_RANK_1, gpio_adc_pins[GPIO_ADC_MCU_1_MAP].channel);
+    LL_ADC_SetChannelSingleDiff(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_1_MAP].channel, LL_ADC_SINGLE_ENDED);
 
-    LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_2, LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_2, LL_ADC_CHANNEL_2);
-    LL_ADC_SetChannelSingleDiff(ADC1, LL_ADC_CHANNEL_2, LL_ADC_SINGLE_ENDED);
-    //
+    LL_ADC_SetChannelSamplingTime(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_2_TPS].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
+    LL_ADC_REG_SetSequencerRanks(
+        ADC1, LL_ADC_REG_RANK_2, gpio_adc_pins[GPIO_ADC_MCU_2_TPS].channel);
+    LL_ADC_SetChannelSingleDiff(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_2_TPS].channel, LL_ADC_SINGLE_ENDED);
 
-    //for(FuriHalAdcChannel channel = FuriHalAdcChannel0; channel < FuriHalAdcChannelNone;
-    //    channel++) {
-    //    LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_1, furi_hal_adc_channel_map[FuriHalAdcChannelTEMPSENSOR]);
-    //    // 47.5 cycles on 64MHz is first meaningful value for internal sources sampling
-    //    LL_ADC_SetChannelSamplingTime(
-    //        ADC1, furi_hal_adc_channel_map[channel], LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    //    LL_ADC_SetChannelSingleDiff(ADC1, furi_hal_adc_channel_map[channel], LL_ADC_SINGLE_ENDED);
-    //}
+    LL_ADC_SetChannelSamplingTime(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_3_AIR_TEMP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
+    LL_ADC_REG_SetSequencerRanks(
+        ADC1, LL_ADC_REG_RANK_3, gpio_adc_pins[GPIO_ADC_MCU_3_AIR_TEMP].channel);
+    LL_ADC_SetChannelSingleDiff(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_3_AIR_TEMP].channel, LL_ADC_SINGLE_ENDED);
+
+    LL_ADC_SetChannelSamplingTime(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_4_WATER_TEMP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
+    LL_ADC_REG_SetSequencerRanks(
+        ADC1, LL_ADC_REG_RANK_4, gpio_adc_pins[GPIO_ADC_MCU_4_WATER_TEMP].channel);
+    LL_ADC_SetChannelSingleDiff(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_4_WATER_TEMP].channel, LL_ADC_SINGLE_ENDED);
+
+    LL_ADC_SetChannelSamplingTime(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_5_GP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
+    LL_ADC_REG_SetSequencerRanks(
+        ADC1, LL_ADC_REG_RANK_5, gpio_adc_pins[GPIO_ADC_MCU_5_GP].channel);
+    LL_ADC_SetChannelSingleDiff(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_5_GP].channel, LL_ADC_SINGLE_ENDED);
+
+    LL_ADC_SetChannelSamplingTime(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_6_GP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
+    LL_ADC_REG_SetSequencerRanks(
+        ADC1, LL_ADC_REG_RANK_6, gpio_adc_pins[GPIO_ADC_MCU_6_GP].channel);
+    LL_ADC_SetChannelSingleDiff(
+        ADC1, gpio_adc_pins[GPIO_ADC_MCU_6_GP].channel, LL_ADC_SINGLE_ENDED);
+    //
 
     LL_ADC_DisableDeepPowerDown(ADC1);
     LL_ADC_EnableInternalRegulator(ADC1);
@@ -174,7 +176,6 @@ static void flipper_ecu_adc_worker_adc_deinit(FlipperECUAdcWorker* worker) {
 static int32_t flipper_ecu_adc_worker_thread(void* arg) {
     FlipperECUAdcWorker* worker = arg;
     UNUSED(worker);
-    UNUSED(furi_hal_adc_channel_map);
     uint32_t events;
     FuriString* fstr = furi_string_alloc();
     FURI_LOG_I(TAG, "thread started");
@@ -187,10 +188,18 @@ static int32_t flipper_ecu_adc_worker_thread(void* arg) {
         if(events & FlipperECUAdcWorkerEventDmaDone) {
             FURI_LOG_I(TAG, "DMA done");
             furi_string_printf(
-                fstr, "buf[0]: %d, buf[1]: %d", worker->adc_buf[0], worker->adc_buf[1]);
+                fstr,
+                "buf[0]: %d, buf[1]: %d, buf[2]: %d",
+                worker->adc_buf[0],
+                worker->adc_buf[1],
+                worker->adc_buf[2]);
             FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
             furi_string_printf(
-                fstr, "buf[2]: %d, buf[3]: %d", worker->adc_buf[2], worker->adc_buf[3]);
+                fstr,
+                "buf[3]: %d, buf[4]: %d, buf[5]: %d",
+                worker->adc_buf[3],
+                worker->adc_buf[4],
+                worker->adc_buf[5]);
             FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
             LL_ADC_REG_StartConversion(ADC1);
         }
@@ -206,10 +215,18 @@ FlipperECUAdcWorker* flipper_ecu_adc_worker_alloc(void) {
     worker->thread = furi_thread_alloc_ex(TAG, 1024, flipper_ecu_adc_worker_thread, worker);
     return worker;
 }
+void flipper_ecu_adc_worker_gpio_init(FlipperECUAdcWorker* worker) {
+    UNUSED(worker);
+    furi_hal_gpio_init(gpio_adc_mcu_1_map, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
+    for(uint8_t index = 0; index < gpio_adc_pins_size; index++) {
+        furi_hal_gpio_init(gpio_adc_pins[index].pin, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
+    }
+}
 
 void flipper_ecu_adc_worker_start(FlipperECUAdcWorker* worker) {
     furi_thread_start(worker->thread);
     furi_delay_tick(10);
+    flipper_ecu_adc_worker_gpio_init(worker);
     flipper_ecu_adc_worker_dma_init(worker);
     flipper_ecu_adc_worker_adc_init(worker);
 }
@@ -220,6 +237,7 @@ void flipper_ecu_adc_worker_free(FlipperECUAdcWorker* worker) {
 }
 
 void flipper_ecu_adc_worker_send_stop(FlipperECUAdcWorker* worker) {
+    // there is no gpio deinit function because analog mode is a system default state
     flipper_ecu_adc_worker_dma_deinit(worker);
     flipper_ecu_adc_worker_adc_deinit(worker);
     furi_thread_flags_set(furi_thread_get_id(worker->thread), FlipperECUAdcWorkerEventStop);

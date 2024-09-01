@@ -2,7 +2,6 @@
 
 #include <stdint.h>
 #include <furi.h>
-#include "../../flipper_ecu_gpio.h"
 
 #include "../../flipper_ecu_engine_config.h"
 #include "../../flipper_ecu_engine_status.h"
