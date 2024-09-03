@@ -8,8 +8,8 @@ struct FlipperECUMap {
     char x_name[X_Y_NAME_SIZE]; // 'x' axis name
     char z_name[X_Y_NAME_SIZE]; // 'z' axis name. no care for 2D maps
     char values_name[X_Y_NAME_SIZE]; // 'y' axis name
-    uint8_t map_x_size; // eg: 16 values for 2D map or first '16' in '16x16' in 3D maps.
-    uint8_t map_z_size; // eg: second '16' in '16x16'. In 3D maps.  TODO: name
+    uint16_t map_x_size; // eg: 16 values for 2D map or first '16' in '16x16' in 3D maps.
+    uint16_t map_z_size; // eg: second '16' in '16x16'. In 3D maps.  TODO: name
     int16_t value_min; // editable value min
     int16_t value_max; // editable value max
     int16_t* values; // editable values. size = map_x_size * map_z_size, ** for 3D maps.
@@ -46,26 +46,26 @@ void flipper_ecu_map_set_ranges(FlipperECUMap* map, int16_t value_min, int16_t v
     map->value_max = value_max;
 }
 
-int16_t flipper_ecu_map_get_value_by_index_2d(FlipperECUMap* map, uint8_t index) {
+int16_t flipper_ecu_map_get_value_by_index_2d(FlipperECUMap* map, uint16_t index) {
     furi_check(map->type == FlipperECUMapType2D);
     furi_check(index < map->map_x_size);
     return map->values[index];
 }
 
 int16_t
-    flipper_ecu_map_get_value_by_index_3d(FlipperECUMap* map, uint8_t index_x, uint8_t index_z) {
+    flipper_ecu_map_get_value_by_index_3d(FlipperECUMap* map, uint16_t index_x, uint16_t index_z) {
     furi_check(map->type == FlipperECUMapType3D);
     furi_check(index_x < map->map_x_size);
     furi_check(index_z < map->map_z_size);
     return map->values[(index_z * map->map_x_size) + index_x];
 }
 
-int16_t flipper_ecu_map_get_key_x_by_index(FlipperECUMap* map, uint8_t index_x) {
+int16_t flipper_ecu_map_get_key_x_by_index(FlipperECUMap* map, uint16_t index_x) {
     furi_check(index_x < map->map_x_size);
     return map->keys_x[index_x];
 }
 
-int16_t flipper_ecu_map_get_key_z_by_index_3d(FlipperECUMap* map, uint8_t index_z) {
+int16_t flipper_ecu_map_get_key_z_by_index_3d(FlipperECUMap* map, uint16_t index_z) {
     furi_check(map->type == FlipperECUMapType3D);
     furi_check(index_z < map->map_z_size);
     furi_check(map->keys_z);
@@ -89,7 +89,7 @@ const char* flipper_ecu_map_get_values_name(FlipperECUMap* map) {
     return map->values_name;
 }
 
-void flipper_ecu_map_set_value_by_index_2d(FlipperECUMap* map, uint8_t index, int16_t value) {
+void flipper_ecu_map_set_value_by_index_2d(FlipperECUMap* map, uint16_t index, int16_t value) {
     furi_check(map->type == FlipperECUMapType2D);
     furi_check(index < map->map_x_size);
     map->values[index] = value;
@@ -97,8 +97,8 @@ void flipper_ecu_map_set_value_by_index_2d(FlipperECUMap* map, uint8_t index, in
 
 void flipper_ecu_map_set_value_by_index_3d(
     FlipperECUMap* map,
-    uint8_t index_x,
-    uint8_t index_z,
+    uint16_t index_x,
+    uint16_t index_z,
     int16_t value) {
     furi_check(map->type == FlipperECUMapType3D);
     furi_check(index_x < map->map_x_size);
@@ -125,11 +125,11 @@ void flipper_ecu_map_set_keys_z_3d(FlipperECUMap* map, const int16_t* keys_z) {
     memcpy(map->keys_z, keys_z, sizeof(int16_t) * map->map_z_size);
 }
 
-uint8_t flipper_ecu_map_get_map_x_size(FlipperECUMap* map) {
+uint16_t flipper_ecu_map_get_map_x_size(FlipperECUMap* map) {
     return map->map_x_size;
 }
 
-uint8_t flipper_ecu_map_get_map_z_size_3d(FlipperECUMap* map) {
+uint16_t flipper_ecu_map_get_map_z_size_3d(FlipperECUMap* map) {
     furi_check(map->type == FlipperECUMapType3D);
     return map->map_z_size;
 }
@@ -142,7 +142,7 @@ int16_t flipper_ecu_map_get_value_max(FlipperECUMap* map) {
     return map->value_max;
 }
 
-FlipperECUMap* flipper_ecu_map_create_alloc_2d(uint8_t map_x_size) {
+FlipperECUMap* flipper_ecu_map_create_alloc_2d(uint16_t map_x_size) {
     furi_check(map_x_size > 1);
     const uint16_t map_mem_keys_size = map_x_size * sizeof(int16_t);
     const uint16_t map_mem_values_size = map_x_size * sizeof(int16_t);
@@ -160,7 +160,7 @@ FlipperECUMap* flipper_ecu_map_create_alloc_2d(uint8_t map_x_size) {
     return map;
 }
 
-FlipperECUMap* flipper_ecu_map_create_alloc_3d(uint8_t map_x_size, uint8_t map_z_size) {
+FlipperECUMap* flipper_ecu_map_create_alloc_3d(uint16_t map_x_size, uint16_t map_z_size) {
     furi_check(map_x_size > 1);
     furi_check(map_z_size > 1); // i think nobody wants a 1-layer'ed 3D map
     // 2D map size = sizeof struct + map_x_size + headers (map_x_size)
@@ -209,7 +209,7 @@ void flipper_ecu_map_free(FlipperECUMap* map) {
 
 int16_t flipper_ecu_map_interpolate_2d(FlipperECUMap* map, int16_t key_x) {
     int16_t ret = 0;
-    for(uint8_t i = 0; i < map->map_x_size; i++) {
+    for(uint16_t i = 0; i < map->map_x_size; i++) {
         if(key_x == map->keys_x[i]) { // exact match
             ret = map->values[i];
             break;
