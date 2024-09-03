@@ -15,6 +15,7 @@ typedef enum {
 typedef struct {
     const GpioPin* pin;
     const uint32_t channel;
+    const uint32_t rank;
 } GpioPinAdcRecord;
 
 extern const GpioPin* const gpio_adc_mcu_1_map;

@@ -184,18 +184,22 @@ FlipperECUMap* flipper_ecu_map_create_alloc_3d(uint8_t map_x_size, uint8_t map_z
     return map;
 }
 
-uint32_t flipper_ecu_map_get_mem_size(FlipperECUMap* map) {
+static void* flipper_ecu_map_get_map_data_mem(FlipperECUMap* map) {
+    return (void*)map->values;
+}
+
+// only data size, not whole struct
+static uint32_t flipper_ecu_map_get_data_mem_size(FlipperECUMap* map) {
     uint16_t map_mem_keys_x_size = map->map_x_size * sizeof(int16_t);
     uint16_t map_mem_values_size = map->map_x_size * sizeof(int16_t);
 
     uint32_t total_mem = 0;
     if(map->type == FlipperECUMapType3D) {
-        furi_check(map->map_z_size > 1);
         map_mem_values_size *= map->map_z_size;
         const uint16_t map_mem_keys_z_size = map->map_z_size * sizeof(int16_t);
         total_mem += map_mem_keys_z_size;
     }
-    total_mem += sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_x_size;
+    total_mem += map_mem_values_size + map_mem_keys_x_size;
     return total_mem;
 }
 
@@ -235,23 +239,10 @@ FlipperECUMapType flipper_ecu_map_get_map_type(FlipperECUMap* map) {
 }
 
 bool flipper_ecu_map_load(FlipperECUMap* map, File* file) {
-    uint32_t size = flipper_ecu_map_get_mem_size(map);
-    if(storage_file_read(file, (void*)map, size) != size) return false;
-    void* map_mem = map;
-
-    // restoring pointers
-    const uint16_t map_mem_keys_x_size = map->map_x_size * sizeof(int16_t);
-    const uint16_t map_mem_values_size = map->map_x_size * map->map_z_size * sizeof(int16_t);
-    map->values = (map_mem + sizeof(FlipperECUMap));
-    map->keys_x = (map_mem + sizeof(FlipperECUMap) + map_mem_values_size);
-    if(map->type == FlipperECUMapType3D) {
-        map->keys_z =
-            (map_mem + sizeof(FlipperECUMap) + map_mem_values_size + map_mem_keys_x_size);
-    }
-
-    return true;
+    const uint32_t size = flipper_ecu_map_get_data_mem_size(map);
+    return (storage_file_read(file, flipper_ecu_map_get_map_data_mem(map), size) == size);
 }
 bool flipper_ecu_map_save(FlipperECUMap* map, File* file) {
-    uint32_t size = flipper_ecu_map_get_mem_size(map);
-    return (storage_file_write(file, (void*)map, size) == size);
+    const uint32_t size = flipper_ecu_map_get_data_mem_size(map);
+    return (storage_file_write(file, flipper_ecu_map_get_map_data_mem(map), size) == size);
 }

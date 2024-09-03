@@ -11,12 +11,12 @@ const GpioPin* const gpio_adc_mcu_5_gp = &gpio_ext_pa1;
 const GpioPin* const gpio_adc_mcu_6_gp = &gpio_ext_pa2;
 
 const GpioPinAdcRecord gpio_adc_pins[] = {
-    {.pin = gpio_adc_mcu_1_map, .channel = LL_ADC_CHANNEL_1},
-    {.pin = gpio_adc_mcu_2_tps, .channel = LL_ADC_CHANNEL_2},
-    {.pin = gpio_adc_mcu_3_air_temp, .channel = LL_ADC_CHANNEL_4},
-    {.pin = gpio_adc_mcu_4_water_temp, .channel = LL_ADC_CHANNEL_5},
-    {.pin = gpio_adc_mcu_5_gp, .channel = LL_ADC_CHANNEL_5},
-    {.pin = gpio_adc_mcu_6_gp, .channel = LL_ADC_CHANNEL_6},
+    {.pin = gpio_adc_mcu_1_map, .channel = LL_ADC_CHANNEL_1, .rank = LL_ADC_REG_RANK_1},
+    {.pin = gpio_adc_mcu_2_tps, .channel = LL_ADC_CHANNEL_2, .rank = LL_ADC_REG_RANK_2},
+    {.pin = gpio_adc_mcu_3_air_temp, .channel = LL_ADC_CHANNEL_4, .rank = LL_ADC_REG_RANK_3},
+    {.pin = gpio_adc_mcu_4_water_temp, .channel = LL_ADC_CHANNEL_5, .rank = LL_ADC_REG_RANK_4},
+    {.pin = gpio_adc_mcu_5_gp, .channel = LL_ADC_CHANNEL_5, .rank = LL_ADC_REG_RANK_5},
+    {.pin = gpio_adc_mcu_6_gp, .channel = LL_ADC_CHANNEL_6, .rank = LL_ADC_REG_RANK_6},
 };
 
 const size_t gpio_adc_pins_size = COUNT_OF(gpio_adc_pins);

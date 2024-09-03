@@ -15,6 +15,11 @@ FlipperECUEngineSettings* flipper_ecu_engine_settings_alloc(void) {
         set->maps[IGN_TPS_MAP], "Ignition by TPS", "RPM", "TPS %", "Angle");
     flipper_ecu_map_set_ranges(set->maps[IGN_TPS_MAP], -15, 55);
 
+    // MAF decode map
+    //set->maps[MAF_DECODE_MAP] = flipper_ecu_map_create_alloc_2d(255);
+    //flipper_ecu_map_set_names_2d(set->maps[MAF_DECODE_MAP], "MAF decode", "mV", "kg/h");
+    //flipper_ecu_map_set_ranges(set->maps[IGN_TPS_MAP], -150, 1000);
+
     return set;
 }
 

@@ -7,6 +7,7 @@
 typedef struct {
     FuriThread* thread;
     uint16_t adc_buf[ADC_BUFFER_SIZE];
+    float adc_converted_data[ADC_BUFFER_SIZE];
 } FlipperECUAdcWorker;
 
 typedef enum {

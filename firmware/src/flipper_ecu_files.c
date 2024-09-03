@@ -3,7 +3,7 @@
 #include "gui/flipper_ecu_gui_i.h"
 
 static bool flipper_ecu_files_save_maps(FlipperECUApp* app, File* file) {
-    for(uint8_t map_index = 0; map_index < IGN_MAP_COUNT; map_index++) {
+    for(uint8_t map_index = 0; map_index < MAP_COUNT; map_index++) {
         FlipperECUMap* map = app->engine_settings->maps[map_index];
         if(!flipper_ecu_map_save(map, file)) return false;
     }
@@ -11,7 +11,7 @@ static bool flipper_ecu_files_save_maps(FlipperECUApp* app, File* file) {
 }
 
 static bool flipper_ecu_files_load_maps(FlipperECUApp* app, File* file) {
-    for(uint8_t map_index = 0; map_index < IGN_MAP_COUNT; map_index++) {
+    for(uint8_t map_index = 0; map_index < MAP_COUNT; map_index++) {
         FlipperECUMap* map = app->engine_settings->maps[map_index];
         if(!flipper_ecu_map_load(map, file)) return false;
     }

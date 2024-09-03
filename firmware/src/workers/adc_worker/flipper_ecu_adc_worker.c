@@ -55,8 +55,19 @@ static void flipper_ecu_adc_worker_dma_deinit(FlipperECUAdcWorker* worker) {
     LL_DMA_DeInit(DMA2, LL_DMA_CHANNEL_1);
 }
 
-static void flipper_ecu_adc_worker_adc_init(FlipperECUAdcWorker* worker) {
+static void flipper_ecu_adc_worker_adc_pins_init(FlipperECUAdcWorker* worker) {
     UNUSED(worker);
+    for(uint8_t index = 0; index < gpio_adc_pins_size; index++) {
+        furi_hal_gpio_init(gpio_adc_pins[index].pin, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
+        LL_ADC_SetChannelSamplingTime(
+            ADC1, gpio_adc_pins[index].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
+        LL_ADC_REG_SetSequencerRanks(
+            ADC1, gpio_adc_pins[index].rank, gpio_adc_pins[index].channel);
+        LL_ADC_SetChannelSingleDiff(ADC1, gpio_adc_pins[index].channel, LL_ADC_SINGLE_ENDED);
+    }
+}
+
+static void flipper_ecu_adc_worker_adc_init(FlipperECUAdcWorker* worker) {
     FuriHalCortexTimer timer;
     if(furi_hal_bus_is_enabled(FuriHalBusADC)) furi_hal_bus_disable(FuriHalBusADC);
     LL_VREFBUF_SetVoltageScaling(LL_VREFBUF_VOLTAGE_SCALE0);
@@ -95,49 +106,7 @@ static void flipper_ecu_adc_worker_adc_init(FlipperECUAdcWorker* worker) {
     LL_ADC_SetOverSamplingScope(ADC1, LL_ADC_OVS_GRP_REGULAR_CONTINUED);
     LL_ADC_ConfigOverSamplingRatioShift(ADC1, LL_ADC_OVS_RATIO_64, LL_ADC_OVS_SHIFT_RIGHT_6);
 
-    // Gpio Analog Pins
-    LL_ADC_SetChannelSamplingTime(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_1_MAP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    LL_ADC_REG_SetSequencerRanks(
-        ADC1, LL_ADC_REG_RANK_1, gpio_adc_pins[GPIO_ADC_MCU_1_MAP].channel);
-    LL_ADC_SetChannelSingleDiff(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_1_MAP].channel, LL_ADC_SINGLE_ENDED);
-
-    LL_ADC_SetChannelSamplingTime(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_2_TPS].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    LL_ADC_REG_SetSequencerRanks(
-        ADC1, LL_ADC_REG_RANK_2, gpio_adc_pins[GPIO_ADC_MCU_2_TPS].channel);
-    LL_ADC_SetChannelSingleDiff(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_2_TPS].channel, LL_ADC_SINGLE_ENDED);
-
-    LL_ADC_SetChannelSamplingTime(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_3_AIR_TEMP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    LL_ADC_REG_SetSequencerRanks(
-        ADC1, LL_ADC_REG_RANK_3, gpio_adc_pins[GPIO_ADC_MCU_3_AIR_TEMP].channel);
-    LL_ADC_SetChannelSingleDiff(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_3_AIR_TEMP].channel, LL_ADC_SINGLE_ENDED);
-
-    LL_ADC_SetChannelSamplingTime(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_4_WATER_TEMP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    LL_ADC_REG_SetSequencerRanks(
-        ADC1, LL_ADC_REG_RANK_4, gpio_adc_pins[GPIO_ADC_MCU_4_WATER_TEMP].channel);
-    LL_ADC_SetChannelSingleDiff(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_4_WATER_TEMP].channel, LL_ADC_SINGLE_ENDED);
-
-    LL_ADC_SetChannelSamplingTime(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_5_GP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    LL_ADC_REG_SetSequencerRanks(
-        ADC1, LL_ADC_REG_RANK_5, gpio_adc_pins[GPIO_ADC_MCU_5_GP].channel);
-    LL_ADC_SetChannelSingleDiff(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_5_GP].channel, LL_ADC_SINGLE_ENDED);
-
-    LL_ADC_SetChannelSamplingTime(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_6_GP].channel, LL_ADC_SAMPLINGTIME_247CYCLES_5);
-    LL_ADC_REG_SetSequencerRanks(
-        ADC1, LL_ADC_REG_RANK_6, gpio_adc_pins[GPIO_ADC_MCU_6_GP].channel);
-    LL_ADC_SetChannelSingleDiff(
-        ADC1, gpio_adc_pins[GPIO_ADC_MCU_6_GP].channel, LL_ADC_SINGLE_ENDED);
-    //
+    flipper_ecu_adc_worker_adc_pins_init(worker); // must be in this place
 
     LL_ADC_DisableDeepPowerDown(ADC1);
     LL_ADC_EnableInternalRegulator(ADC1);
@@ -173,9 +142,17 @@ static void flipper_ecu_adc_worker_adc_deinit(FlipperECUAdcWorker* worker) {
     LL_VREFBUF_EnableHIZ();
 }
 
+static void flipper_ecu_adc_worker_convert_data_to_voltage(FlipperECUAdcWorker* worker) {
+    for(uint8_t index = 0; index < gpio_adc_pins_size; index++) {
+        worker->adc_converted_data[index] = (float)__LL_ADC_CALC_DATA_TO_VOLTAGE(
+            2048, worker->adc_buf[index], LL_ADC_RESOLUTION_12B);
+    }
+}
+
 static int32_t flipper_ecu_adc_worker_thread(void* arg) {
     FlipperECUAdcWorker* worker = arg;
     UNUSED(worker);
+    UNUSED(flipper_ecu_adc_worker_convert_data_to_voltage);
     uint32_t events;
     FuriString* fstr = furi_string_alloc();
     FURI_LOG_I(TAG, "thread started");
@@ -186,22 +163,23 @@ static int32_t flipper_ecu_adc_worker_thread(void* arg) {
             break;
         }
         if(events & FlipperECUAdcWorkerEventDmaDone) {
-            FURI_LOG_I(TAG, "DMA done");
-            furi_string_printf(
-                fstr,
-                "buf[0]: %d, buf[1]: %d, buf[2]: %d",
-                worker->adc_buf[0],
-                worker->adc_buf[1],
-                worker->adc_buf[2]);
-            FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
-            furi_string_printf(
-                fstr,
-                "buf[3]: %d, buf[4]: %d, buf[5]: %d",
-                worker->adc_buf[3],
-                worker->adc_buf[4],
-                worker->adc_buf[5]);
-            FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
-            LL_ADC_REG_StartConversion(ADC1);
+            //flipper_ecu_adc_worker_convert_data_to_voltage(worker);
+            //FURI_LOG_I(TAG, "DMA done");
+            //furi_string_printf(
+            //    fstr,
+            //    "buf[0]: %4.0f, buf[1]: %4.0f, buf[2]: %4.0f",
+            //    (double)worker->adc_converted_data[0],
+            //    (double)worker->adc_converted_data[1],
+            //    (double)worker->adc_converted_data[2]);
+            //FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
+            //furi_string_printf(
+            //    fstr,
+            //    "buf[3]: %4.0f, buf[4]: %4.0f, buf[5]: %4.0f",
+            //    (double)worker->adc_converted_data[3],
+            //    (double)worker->adc_converted_data[4],
+            //    (double)worker->adc_converted_data[5]);
+            //FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
+            //LL_ADC_REG_StartConversion(ADC1);
         }
         furi_delay_tick(10);
     }
@@ -215,18 +193,9 @@ FlipperECUAdcWorker* flipper_ecu_adc_worker_alloc(void) {
     worker->thread = furi_thread_alloc_ex(TAG, 1024, flipper_ecu_adc_worker_thread, worker);
     return worker;
 }
-void flipper_ecu_adc_worker_gpio_init(FlipperECUAdcWorker* worker) {
-    UNUSED(worker);
-    furi_hal_gpio_init(gpio_adc_mcu_1_map, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
-    for(uint8_t index = 0; index < gpio_adc_pins_size; index++) {
-        furi_hal_gpio_init(gpio_adc_pins[index].pin, GpioModeAnalog, GpioPullNo, GpioSpeedLow);
-    }
-}
-
 void flipper_ecu_adc_worker_start(FlipperECUAdcWorker* worker) {
     furi_thread_start(worker->thread);
     furi_delay_tick(10);
-    flipper_ecu_adc_worker_gpio_init(worker);
     flipper_ecu_adc_worker_dma_init(worker);
     flipper_ecu_adc_worker_adc_init(worker);
 }
