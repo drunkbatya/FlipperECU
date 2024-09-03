@@ -20,10 +20,10 @@ struct FlipperECUMapEditorView {
 
 typedef struct {
     FlipperECUMap* map;
-    uint8_t prev_dot_x;
-    uint8_t prev_dot_y;
-    uint8_t selected_x_dot;
-    uint8_t selected_z_dot;
+    uint32_t prev_dot_x;
+    uint32_t prev_dot_y;
+    uint16_t selected_x_dot;
+    uint16_t selected_z_dot;
     bool edit_mode;
     int16_t using_key;
     bool map_in_use;
@@ -40,7 +40,7 @@ void flipper_ecu_view_map_editor_load_map(
             model->edit_mode = false;
             model->selected_x_dot = 3;
             model->selected_z_dot = 0;
-            model->using_key = 1950;
+            model->using_key = 0;
             model->map_in_use = false;
         },
         true);
@@ -148,7 +148,7 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
             }
         }
     }
-    for(uint8_t x_model = 0; x_model < flipper_ecu_map_get_map_x_size(map_editor_model->map);
+    for(uint16_t x_model = 0; x_model < flipper_ecu_map_get_map_x_size(map_editor_model->map);
         x_model++) {
         bool framed_dot = false;
         int16_t current_value_to_calc = 0;
@@ -165,9 +165,9 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         } else if(flipper_ecu_map_get_value_min(map_editor_model->map) > 0) {
             current_value_to_calc -= flipper_ecu_map_get_value_min(map_editor_model->map);
         }
-        uint16_t x = (x_model * step) + main_field_start_x + PLOT_PADDING_PX;
-        uint8_t y = main_field_plot_height - (current_value_to_calc * y_step / scale) +
-                    main_field_start_y + PLOT_PADDING_PX;
+        uint32_t x = (x_model * step) + main_field_start_x + PLOT_PADDING_PX;
+        uint32_t y = main_field_plot_height - (current_value_to_calc * y_step / scale) +
+                     main_field_start_y + PLOT_PADDING_PX;
 
         // if engine is running and current key is last used
         //if(map_editor_model->map_in_use &&
