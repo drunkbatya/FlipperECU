@@ -28,7 +28,7 @@ bool flipper_ecu_scene_config_on_event(void* context, SceneManagerEvent event) {
     if(event.type == SceneManagerEventTypeCustom) {
         scene_manager_set_scene_state(app->scene_manager, FlipperECUSceneConfig, event.event);
         if(event.event == FlipperECUSceneConfigSubmenuIndexSensors) {
-            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigSensors);
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigSensor);
             success = true;
         }
     }
