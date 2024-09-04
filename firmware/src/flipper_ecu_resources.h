@@ -9,21 +9,17 @@ typedef enum {
     GPIO_ADC_MCU_4_WATER_TEMP = 3,
     GPIO_ADC_MCU_5_GP = 4,
     GPIO_ADC_MCU_6_GP = 5,
-    GPIO_ADC_NONE = 6,
+    GPIO_ADC_MCU_7_VIN = 6,
+    GPIO_ADC_MCU_5_5V = 7,
+    GPIO_ADC_NONE = 8,
 } GpioAdcPins;
 
 typedef struct {
     const GpioPin* pin;
     const uint32_t channel;
     const uint32_t rank;
+    double ext_voltage_div_ratio;
 } GpioPinAdcRecord;
-
-extern const GpioPin* const gpio_adc_mcu_1_map;
-extern const GpioPin* const gpio_adc_mcu_2_tps;
-extern const GpioPin* const gpio_adc_mcu_3_air_temp;
-extern const GpioPin* const gpio_adc_mcu_4_water_temp;
-extern const GpioPin* const gpio_adc_mcu_5_gp;
-extern const GpioPin* const gpio_adc_mcu_6_gp;
 
 extern const GpioPinAdcRecord gpio_adc_pins[];
 extern const size_t gpio_adc_pins_size;

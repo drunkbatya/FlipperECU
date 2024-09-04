@@ -19,5 +19,5 @@ bool flipper_ecu_scene_map_editor_on_event(void* context, SceneManagerEvent even
 
 void flipper_ecu_scene_map_editor_on_exit(void* context) {
     FlipperECUGui* app = context;
-    UNUSED(app);
+    flipper_ecu_view_map_editor_reset(app->view_map_editor);
 }

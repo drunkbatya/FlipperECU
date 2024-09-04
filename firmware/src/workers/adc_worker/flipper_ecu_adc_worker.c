@@ -96,7 +96,7 @@ static void flipper_ecu_adc_worker_adc_init(FlipperECUAdcWorker* worker) {
 
     LL_ADC_REG_InitTypeDef reg_init_struct = {0};
     reg_init_struct.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
-    reg_init_struct.SequencerLength = LL_ADC_REG_SEQ_SCAN_ENABLE_6RANKS;
+    reg_init_struct.SequencerLength = LL_ADC_REG_SEQ_SCAN_ENABLE_8RANKS;
     reg_init_struct.SequencerDiscont = LL_ADC_REG_SEQ_DISCONT_DISABLE;
     reg_init_struct.ContinuousMode = LL_ADC_REG_CONV_SINGLE;
     reg_init_struct.DMATransfer = LL_ADC_REG_DMA_TRANSFER_UNLIMITED;
@@ -144,9 +144,12 @@ static void flipper_ecu_adc_worker_adc_deinit(FlipperECUAdcWorker* worker) {
 
 static void flipper_ecu_adc_worker_convert_data_to_voltage(FlipperECUAdcWorker* worker) {
     for(uint8_t index = 0; index < gpio_adc_pins_size; index++) {
-        worker->adc_converted_data[index] = (float)__LL_ADC_CALC_DATA_TO_VOLTAGE(
-            2048, worker->adc_buf[index], LL_ADC_RESOLUTION_12B);
+        worker->adc_converted_data[index] =
+            (double)__LL_ADC_CALC_DATA_TO_VOLTAGE(
+                2048, worker->adc_buf[index], LL_ADC_RESOLUTION_12B) /
+            gpio_adc_pins[index].ext_voltage_div_ratio;
     }
+    worker->first_measurement_done = true;
 }
 
 static int32_t flipper_ecu_adc_worker_thread(void* arg) {
@@ -163,23 +166,25 @@ static int32_t flipper_ecu_adc_worker_thread(void* arg) {
             break;
         }
         if(events & FlipperECUAdcWorkerEventDmaDone) {
-            //flipper_ecu_adc_worker_convert_data_to_voltage(worker);
-            //FURI_LOG_I(TAG, "DMA done");
-            //furi_string_printf(
-            //    fstr,
-            //    "buf[0]: %4.0f, buf[1]: %4.0f, buf[2]: %4.0f",
-            //    (double)worker->adc_converted_data[0],
-            //    (double)worker->adc_converted_data[1],
-            //    (double)worker->adc_converted_data[2]);
-            //FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
-            //furi_string_printf(
-            //    fstr,
-            //    "buf[3]: %4.0f, buf[4]: %4.0f, buf[5]: %4.0f",
-            //    (double)worker->adc_converted_data[3],
-            //    (double)worker->adc_converted_data[4],
-            //    (double)worker->adc_converted_data[5]);
-            //FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
-            //LL_ADC_REG_StartConversion(ADC1);
+            flipper_ecu_adc_worker_convert_data_to_voltage(worker);
+            FURI_LOG_I(TAG, "DMA done");
+            furi_string_printf(
+                fstr,
+                "buf[0]: %4.0f, buf[1]: %4.0f, buf[2]: %4.0f, buf[3]: %4.0f",
+                (double)worker->adc_converted_data[0],
+                (double)worker->adc_converted_data[1],
+                (double)worker->adc_converted_data[2],
+                (double)worker->adc_converted_data[3]);
+            FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
+            furi_string_printf(
+                fstr,
+                "buf[4]: %4.0f, buf[5]: %4.0f, buf[6]: %4.0f, buf[7]: %4.0f",
+                (double)worker->adc_converted_data[4],
+                (double)worker->adc_converted_data[5],
+                (double)worker->adc_converted_data[6],
+                (double)worker->adc_converted_data[7]);
+            FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
+            LL_ADC_REG_StartConversion(ADC1);
         }
         furi_delay_tick(10);
     }
@@ -191,6 +196,7 @@ static int32_t flipper_ecu_adc_worker_thread(void* arg) {
 FlipperECUAdcWorker* flipper_ecu_adc_worker_alloc(void) {
     FlipperECUAdcWorker* worker = malloc(sizeof(FlipperECUAdcWorker));
     worker->thread = furi_thread_alloc_ex(TAG, 1024, flipper_ecu_adc_worker_thread, worker);
+    worker->first_measurement_done = false; // we need this for workers startup sequence
     return worker;
 }
 void flipper_ecu_adc_worker_start(FlipperECUAdcWorker* worker) {
@@ -214,4 +220,7 @@ void flipper_ecu_adc_worker_send_stop(FlipperECUAdcWorker* worker) {
 
 void flipper_ecu_adc_worker_await_stop(FlipperECUAdcWorker* worker) {
     furi_thread_join(worker->thread);
+}
+bool flipper_ecu_adc_worker_first_measurement_done(FlipperECUAdcWorker* worker) {
+    return worker->first_measurement_done;
 }

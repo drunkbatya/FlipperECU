@@ -31,6 +31,10 @@ int32_t flipper_ecu_app(void* p) {
 
     flipper_ecu_gui_start(app->gui);
     flipper_ecu_adc_worker_start(app->adc_worker);
+    // sync worker must be started after adc worker's first measurement
+    while(!flipper_ecu_adc_worker_first_measurement_done(app->adc_worker))
+        ;
+    ;
     flipper_ecu_sync_worker_start(app->sync_worker);
 
     flipper_ecu_gui_await_stop(app->gui);

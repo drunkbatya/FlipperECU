@@ -46,6 +46,25 @@ void flipper_ecu_view_map_editor_load_map(
         true);
 }
 
+void flipper_ecu_view_map_editor_reset(FlipperECUMapEditorView* view_map_editor) {
+    with_view_model(
+        view_map_editor->view,
+        FlipperECUMapEditorViewModel * model,
+        {
+            model->map = NULL;
+            model->edit_mode = false;
+            model->selected_x_dot = 0;
+            model->selected_z_dot = 0;
+            model->using_key = 0;
+            model->map_in_use = false;
+        },
+        false);
+}
+
+//static bool flipper_ecu_view_map_editor_map_is_loaded(FlipperECUMapEditorView* view_map_editor) {
+//    return view_map_editor->map != NULL;
+//}
+
 static void
     flipper_ecu_view_map_editor_draw_scaled_dot(Canvas* canvas, uint8_t x, uint8_t y, bool framed) {
     canvas_draw_dot(canvas, x, y);

@@ -15,3 +15,4 @@ void flipper_ecu_view_map_editor_view_update(FlipperECUMapEditorView* view_map_e
 void flipper_ecu_view_map_editor_load_map(
     FlipperECUMapEditorView* view_map_editor,
     FlipperECUMap* map);
+void flipper_ecu_view_map_editor_reset(FlipperECUMapEditorView* view_map_editor);
