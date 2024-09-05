@@ -3,6 +3,8 @@
 #include <furi_hal_resources.h>
 #include <stm32wbxx_ll_adc.h>
 
+//static ouble flipper_ecu_resources_convert
+
 // adc pins
 static const GpioPin* const gpio_adc_mcu_1_map = &gpio_ext_pc0;
 static const GpioPin* const gpio_adc_mcu_2_tps = &gpio_ext_pc1;

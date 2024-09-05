@@ -167,23 +167,23 @@ static int32_t flipper_ecu_adc_worker_thread(void* arg) {
         }
         if(events & FlipperECUAdcWorkerEventDmaDone) {
             flipper_ecu_adc_worker_convert_data_to_voltage(worker);
-            FURI_LOG_I(TAG, "DMA done");
-            furi_string_printf(
-                fstr,
-                "buf[0]: %4.0f, buf[1]: %4.0f, buf[2]: %4.0f, buf[3]: %4.0f",
-                (double)worker->adc_converted_data[0],
-                (double)worker->adc_converted_data[1],
-                (double)worker->adc_converted_data[2],
-                (double)worker->adc_converted_data[3]);
-            FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
-            furi_string_printf(
-                fstr,
-                "buf[4]: %4.0f, buf[5]: %4.0f, buf[6]: %4.0f, buf[7]: %4.0f",
-                (double)worker->adc_converted_data[4],
-                (double)worker->adc_converted_data[5],
-                (double)worker->adc_converted_data[6],
-                (double)worker->adc_converted_data[7]);
-            FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
+            //FURI_LOG_I(TAG, "DMA done");
+            //furi_string_printf(
+            //    fstr,
+            //    "buf[0]: %4.0f, buf[1]: %4.0f, buf[2]: %4.0f, buf[3]: %4.0f",
+            //    (double)worker->adc_converted_data[0],
+            //    (double)worker->adc_converted_data[1],
+            //    (double)worker->adc_converted_data[2],
+            //    (double)worker->adc_converted_data[3]);
+            //FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
+            //furi_string_printf(
+            //    fstr,
+            //    "buf[4]: %4.0f, buf[5]: %4.0f, buf[6]: %4.0f, buf[7]: %4.0f",
+            //    (double)worker->adc_converted_data[4],
+            //    (double)worker->adc_converted_data[5],
+            //    (double)worker->adc_converted_data[6],
+            //    (double)worker->adc_converted_data[7]);
+            //FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
             LL_ADC_REG_StartConversion(ADC1);
         }
         furi_delay_tick(10);
