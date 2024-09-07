@@ -1,4 +1,4 @@
-#include "flipper_ecu_sync_worker.h"
+#include "flipper_ecu_sync_worker_i.h"
 #include "flipper_ecu_sync_worker_event_queue.h"
 
 #include <furi_hal_resources.h>
@@ -30,10 +30,6 @@
 #define FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO 20
 #define SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO 52
 
-static uint32_t test_var = 0;
-static uint32_t ign_on = 0;
-static uint32_t ign_off = 0;
-
 static void flipper_ecu_sync_worker_gpio_timer_deinit(FlipperECUSyncWorker* worker);
 static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker);
 static void flipper_ecu_sync_worker_ckps_timer_deinit(FlipperECUSyncWorker* worker);
@@ -51,6 +47,10 @@ static uint32_t degrees_to_ticks(uint32_t period_per_tooth, uint8_t degreese) {
 static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker* worker) {
     // we r captured sync period if we r here, to get actual period we need to divide sync period by missed teeth count
     uint32_t period_per_tooth = worker->previous_period;
+    if(!worker->engine_status->synced) { // if engine is running again after stop
+        furi_thread_flags_set(
+            furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventEngineRunningAgain);
+    }
     worker->engine_status->synced = true;
     worker->engine_status->rpm = SystemCoreClock / period_per_tooth;
     worker->engine_status->ign_angle = flipper_ecu_map_interpolate_2d(
@@ -127,6 +127,8 @@ static void flipper_ecu_sync_worker_cpks_timer_isr(void* context) {
             worker->current_period = 0;
             worker->previous_period = 0;
             FURI_CRITICAL_EXIT();
+            furi_thread_flags_set(
+                furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventEngineStopped);
         }
     }
 }
@@ -186,11 +188,15 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
     }
 }
 
+static void flipper_ecu_sync_worker_gpio_default(FlipperECUSyncWorker* worker) {
+    UNUSED(worker);
+    furi_hal_gpio_write(GPIO_IGNITION_PIN_1, 0);
+    furi_hal_gpio_write(GPIO_IGNITION_PIN_2, 0);
+}
+
 static int32_t flipper_ecu_sync_worker_thread(void* arg) {
     FlipperECUSyncWorker* worker = arg;
-    UNUSED(worker);
     uint32_t events;
-    FuriString* fstr = furi_string_alloc();
     FURI_LOG_I(TAG, "thread started");
     furi_hal_power_insomnia_enter();
     while(1) {
@@ -199,21 +205,21 @@ static int32_t flipper_ecu_sync_worker_thread(void* arg) {
         if(events & FlipperECUSyncWorkerEventStop) {
             break;
         }
-        if(events & FlipperECUSyncWorkerEventCkpPulse) {
-            FURI_LOG_I(TAG, "Timer elapsed!");
+        if(events & FlipperECUSyncWorkerEventEngineStopped) {
+            flipper_ecu_sync_worker_gpio_default(worker);
+            flipper_ecu_fuel_pump_notify_ignition_engine_stopped(
+                flipper_ecu_app_get_fuel_pump_worker(worker->ecu_app));
         }
-        if(events & FlipperECUSyncWorkerEventPredictionDone) {
-            furi_string_printf(
-                fstr,
-                "Prediction done! Ign on: %lu, Ign off: %lu, timer: %lu",
-                ign_on,
-                ign_off,
-                test_var);
-            FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
+        if(events & FlipperECUSyncWorkerEventEngineRunningAgain) {
+            flipper_ecu_fuel_pump_notify_ignition_engine_running(
+                flipper_ecu_app_get_fuel_pump_worker(worker->ecu_app));
+        }
+        if(events & FlipperECUSyncWorkerEventIgnitionSwitchedOn) {
+            flipper_ecu_fuel_pump_notify_ignition_switched_on(
+                flipper_ecu_app_get_fuel_pump_worker(worker->ecu_app));
         }
         furi_delay_tick(10);
     }
-    furi_string_free(fstr);
     FURI_LOG_I(TAG, "thread stopped");
     furi_hal_power_insomnia_exit();
     return 0;
@@ -372,6 +378,7 @@ static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker
     //LL_TIM_EnableIT_UPDATE(GPIO_TIMER);
 
     LL_TIM_EnableCounter(GPIO_TIMER);
+    flipper_ecu_sync_worker_gpio_default(worker);
 }
 
 void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
@@ -387,6 +394,7 @@ void flipper_ecu_sync_worker_load_engine_config(FlipperECUSyncWorker* worker) {
 }
 
 FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(
+    FlipperECUApp* ecu_app,
     FlipperECUEngineStatus* engine_status,
     FlipperECUEngineSettings* engine_settings) {
     FlipperECUSyncWorker* worker = malloc(sizeof(FlipperECUSyncWorker));
@@ -394,6 +402,7 @@ FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(
     worker->thread = furi_thread_alloc_ex(TAG, 4092, flipper_ecu_sync_worker_thread, worker);
     worker->current_period = 0;
     worker->previous_period = 0;
+    worker->ecu_app = ecu_app;
     worker->engine_status = engine_status;
     worker->engine_settings = engine_settings;
     flipper_ecu_sync_worker_load_engine_config(worker);
@@ -430,4 +439,9 @@ void flipper_ecu_sync_worker_load_config(
 void flipper_ecu_sync_worker_free(FlipperECUSyncWorker* worker) {
     furi_thread_free(worker->thread);
     free(worker);
+}
+
+void flipper_ecu_sync_worker_notify_ignition_switched_on(FlipperECUSyncWorker* worker) {
+    furi_thread_flags_set(
+        furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventIgnitionSwitchedOn);
 }

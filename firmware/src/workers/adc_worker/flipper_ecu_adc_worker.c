@@ -1,4 +1,4 @@
-#include "flipper_ecu_adc_worker.h"
+#include "flipper_ecu_adc_worker_i.h"
 
 #include <furi_hal_bus.h>
 #include <furi_hal_adc.h>
@@ -154,10 +154,7 @@ static void flipper_ecu_adc_worker_convert_data_to_voltage(FlipperECUAdcWorker* 
 
 static int32_t flipper_ecu_adc_worker_thread(void* arg) {
     FlipperECUAdcWorker* worker = arg;
-    UNUSED(worker);
-    UNUSED(flipper_ecu_adc_worker_convert_data_to_voltage);
     uint32_t events;
-    FuriString* fstr = furi_string_alloc();
     FURI_LOG_I(TAG, "thread started");
     while(1) {
         events =
@@ -166,36 +163,26 @@ static int32_t flipper_ecu_adc_worker_thread(void* arg) {
             break;
         }
         if(events & FlipperECUAdcWorkerEventDmaDone) {
+            double vin_voltage_old = worker->adc_converted_data[GPIO_ADC_MCU_7_VIN];
             flipper_ecu_adc_worker_convert_data_to_voltage(worker);
-            //FURI_LOG_I(TAG, "DMA done");
-            //furi_string_printf(
-            //    fstr,
-            //    "buf[0]: %4.0f, buf[1]: %4.0f, buf[2]: %4.0f, buf[3]: %4.0f",
-            //    (double)worker->adc_converted_data[0],
-            //    (double)worker->adc_converted_data[1],
-            //    (double)worker->adc_converted_data[2],
-            //    (double)worker->adc_converted_data[3]);
-            //FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
-            //furi_string_printf(
-            //    fstr,
-            //    "buf[4]: %4.0f, buf[5]: %4.0f, buf[6]: %4.0f, buf[7]: %4.0f",
-            //    (double)worker->adc_converted_data[4],
-            //    (double)worker->adc_converted_data[5],
-            //    (double)worker->adc_converted_data[6],
-            //    (double)worker->adc_converted_data[7]);
-            //FURI_LOG_I(TAG, furi_string_get_cstr(fstr));
+            double vin_voltage_cur = worker->adc_converted_data[GPIO_ADC_MCU_7_VIN];
+            // check ignition switch on
+            if((vin_voltage_old < 10000) && vin_voltage_cur > 10000) {
+                flipper_ecu_sync_worker_notify_ignition_switched_on(
+                    flipper_ecu_app_get_sync_worker(worker->ecu_app));
+            }
             LL_ADC_REG_StartConversion(ADC1);
         }
         furi_delay_tick(10);
     }
-    furi_string_free(fstr);
     FURI_LOG_I(TAG, "thread stopped");
     return 0;
 }
 
-FlipperECUAdcWorker* flipper_ecu_adc_worker_alloc(void) {
+FlipperECUAdcWorker* flipper_ecu_adc_worker_alloc(FlipperECUApp* ecu_app) {
     FlipperECUAdcWorker* worker = malloc(sizeof(FlipperECUAdcWorker));
     worker->thread = furi_thread_alloc_ex(TAG, 1024, flipper_ecu_adc_worker_thread, worker);
+    worker->ecu_app = ecu_app;
     worker->first_measurement_done = false; // we need this for workers startup sequence
     return worker;
 }
@@ -221,6 +208,7 @@ void flipper_ecu_adc_worker_send_stop(FlipperECUAdcWorker* worker) {
 void flipper_ecu_adc_worker_await_stop(FlipperECUAdcWorker* worker) {
     furi_thread_join(worker->thread);
 }
+
 bool flipper_ecu_adc_worker_first_measurement_done(FlipperECUAdcWorker* worker) {
     return worker->first_measurement_done;
 }

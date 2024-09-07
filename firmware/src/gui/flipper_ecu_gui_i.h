@@ -15,7 +15,7 @@
 #include "views/flipper_ecu_view_dashboard.h"
 #include "views/flipper_ecu_view_map_editor.h"
 #include "views/flipper_ecu_view_sensor_config.h"
-#include "../flipper_ecu_app.h"
+#include "../flipper_ecu_app_i.h"
 
 #define FLIPPER_ECU_TEXT_BUFFER_SIZE 100
 
