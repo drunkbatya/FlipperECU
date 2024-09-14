@@ -21,6 +21,7 @@ const GpioPin* const gpio_mcu_fan_out = &gpio_ext_pb9;
 
 // idle driver pins
 const GpioPin* const gpio_mcu_idle_direction = &gpio_ibutton; // pb14
+const GpioPin* const gpio_mcu_idle_step = &gpio_ext_pa4;
 
 // ignition pins
 

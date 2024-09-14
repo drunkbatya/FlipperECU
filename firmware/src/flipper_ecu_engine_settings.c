@@ -51,4 +51,7 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
     flipper_ecu_map_set_keys_x(set->maps[IGN_TPS_MAP], test_keys_x_3d);
     flipper_ecu_map_set_keys_z_3d(set->maps[IGN_TPS_MAP], test_keys_z_3d);
     flipper_ecu_map_set_values_3d(set->maps[IGN_TPS_MAP], test_data_3d);
+
+    set->idle_valve_pwm_freq = 500;
+    set->idle_valve_total_steps = 255;
 }

@@ -10,6 +10,7 @@ struct FlipperECUApp {
     FlipperECUSyncWorker* sync_worker;
     FlipperECUAdcWorker* adc_worker;
     FlipperECUFuelPumpWorker* fuel_pump_worker;
+    FlipperECUIdleValveWorker* idle_valve_worker;
     FlipperECUEngineStatus engine_status;
     FlipperECUEngineSettings* engine_settings;
 };

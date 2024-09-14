@@ -4,7 +4,6 @@
 
 static FlipperECUApp* flipper_ecu_app_alloc(void) {
     FlipperECUApp* app = malloc(sizeof(FlipperECUApp));
-    app->gui = flipper_ecu_gui_alloc(app);
 
     app->engine_settings = flipper_ecu_engine_settings_alloc();
     flipper_ecu_engine_settings_load_d(app->engine_settings);
@@ -13,6 +12,9 @@ static FlipperECUApp* flipper_ecu_app_alloc(void) {
         flipper_ecu_sync_worker_alloc(app, &app->engine_status, app->engine_settings);
     app->adc_worker = flipper_ecu_adc_worker_alloc(app);
     app->fuel_pump_worker = flipper_ecu_fuel_pump_worker_alloc(&app->engine_status);
+    app->idle_valve_worker = flipper_ecu_idle_valve_worker_alloc(app->engine_settings);
+
+    app->gui = flipper_ecu_gui_alloc(app);
     return app;
 }
 
@@ -21,6 +23,7 @@ static void flipper_ecu_app_free(FlipperECUApp* app) {
     flipper_ecu_sync_worker_free(app->sync_worker);
     flipper_ecu_adc_worker_free(app->adc_worker);
     flipper_ecu_fuel_pump_worker_free(app->fuel_pump_worker);
+    flipper_ecu_idle_valve_worker_free(app->idle_valve_worker);
 
     flipper_ecu_engine_settings_free(app->engine_settings);
 
@@ -42,6 +45,7 @@ int32_t flipper_ecu_app(void* p) {
     flipper_ecu_fuel_pump_worker_start(app->fuel_pump_worker);
     furi_delay_tick(10);
     flipper_ecu_sync_worker_start(app->sync_worker);
+    flipper_ecu_idle_valve_worker_start(app->idle_valve_worker);
 
     flipper_ecu_gui_await_stop(app->gui);
 
@@ -51,6 +55,8 @@ int32_t flipper_ecu_app(void* p) {
     flipper_ecu_adc_worker_await_stop(app->adc_worker);
     flipper_ecu_fuel_pump_worker_send_stop(app->fuel_pump_worker);
     flipper_ecu_fuel_pump_worker_await_stop(app->fuel_pump_worker);
+    flipper_ecu_idle_valve_worker_send_stop(app->idle_valve_worker);
+    flipper_ecu_idle_valve_worker_await_stop(app->idle_valve_worker);
 
     flipper_ecu_app_free(app);
     return 0;
@@ -64,4 +70,10 @@ FlipperECUFuelPumpWorker* flipper_ecu_app_get_fuel_pump_worker(FlipperECUApp* ap
 }
 FlipperECUAdcWorker* flipper_ecu_app_get_adc_worker(FlipperECUApp* app) {
     return app->adc_worker;
+}
+FlipperECUIdleValveWorker* flipper_ecu_app_get_idle_valve_worker(FlipperECUApp* app) {
+    return app->idle_valve_worker;
+}
+FlipperECUEngineSettings* flipper_ecu_app_get_engine_settings(FlipperECUApp* app) {
+    return app->engine_settings;
 }

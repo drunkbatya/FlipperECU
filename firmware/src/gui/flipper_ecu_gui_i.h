@@ -15,7 +15,7 @@
 #include "views/flipper_ecu_view_dashboard.h"
 #include "views/flipper_ecu_view_map_editor.h"
 #include "views/flipper_ecu_view_sensor_config.h"
-#include "../flipper_ecu_app_i.h"
+#include "views/flipper_ecu_view_idle_manual.h"
 
 #define FLIPPER_ECU_TEXT_BUFFER_SIZE 100
 
@@ -37,6 +37,7 @@ struct FlipperECUGui {
     FlipperECUDashboardView* view_dashboard;
     FlipperECUMapEditorView* view_map_editor;
     FlipperECUSensorConfigView* view_sensor_config;
+    FlipperECUIdleManualView* view_idle_manual;
 };
 
 typedef enum {
@@ -48,6 +49,7 @@ typedef enum {
     FlipperECUGuiViewDashboard,
     FlipperECUGuiViewMapEditor,
     FlipperECUGuiViewSensorConfig,
+    FlipperECUGuiViewIdleManual,
 } FlipperECUGuiView;
 
 typedef enum {

@@ -25,3 +25,6 @@ extern const GpioPinAdcRecord gpio_adc_pins[];
 extern const size_t gpio_adc_pins_size;
 
 extern const GpioPin* const gpio_mcu_fuel_pump_out;
+
+extern const GpioPin* const gpio_mcu_idle_step;
+extern const GpioPin* const gpio_mcu_idle_direction;

@@ -11,6 +11,10 @@ typedef enum { IGN_MAP, IGN_TPS_MAP, MAP_COUNT } FlipperECUEngineSettingsMaps;
 
 typedef struct {
     FlipperECUMap* maps[MAP_COUNT];
+
+    // idle valve
+    uint16_t idle_valve_total_steps;
+    uint16_t idle_valve_pwm_freq;
 } FlipperECUEngineSettings;
 
 void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set);
