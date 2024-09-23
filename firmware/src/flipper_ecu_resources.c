@@ -25,6 +25,12 @@ const GpioPin* const gpio_mcu_idle_step = &gpio_ext_pa4;
 
 // ignition pins
 
+// injectors pins
+const GpioPin* const gpio_mcu_inj_1 = &gpio_ext_pa6;
+const GpioPin* const gpio_mcu_inj_2 = &gpio_ext_pb3;
+const GpioPin* const gpio_mcu_inj_3 = &gpio_ext_pb2;
+const GpioPin* const gpio_mcu_inj_4 = &gpio_ext_pa15;
+
 // Flipper MCU ADC setted up for measuring 0-2048 mV, and
 // there is two types of PCB mounted op-amp buffered voltage dividers
 // for 0-5V has ratio 1/0.4, for 0-18V has ratio 1/0.109,

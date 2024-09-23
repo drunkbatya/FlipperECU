@@ -62,6 +62,9 @@ static int32_t flipper_ecu_idle_valve_worker_thread(void* arg) {
         if(events & FlipperECUIdleValveWorkerEventStop) {
             break;
         }
+        if(events & FlipperECUIdleValveWorkerEventIgnitionSwitchedOn) {
+            flipper_ecu_idle_valve_worker_calibrate(worker);
+        }
         furi_delay_tick(10);
     }
     furi_string_free(fstr);
@@ -250,4 +253,9 @@ void flipper_ecu_idle_valve_worker_calibrate(FlipperECUIdleValveWorker* worker) 
     LL_LPTIM_StartCounter(LPTIM2, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
     LL_TIM_EnableCounter(TIM1);
     worker->current_position = 0;
+}
+
+void flipper_ecu_idle_valve_worker_notify_ignition_switched_on(FlipperECUIdleValveWorker* worker) {
+    furi_thread_flags_set(
+        furi_thread_get_id(worker->thread), FlipperECUIdleValveWorkerEventIgnitionSwitchedOn);
 }

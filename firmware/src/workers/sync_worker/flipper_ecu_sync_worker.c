@@ -55,6 +55,8 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     worker->engine_status->rpm = SystemCoreClock / period_per_tooth;
     worker->engine_status->ign_angle = flipper_ecu_map_interpolate_2d(
         worker->engine_settings->maps[IGN_MAP], worker->engine_status->rpm);
+
+    // semi-sequental ignition temp
     uint32_t timer_ticks_to_tdc_cylinder_1_4 =
         (period_per_tooth * FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO);
     uint32_t ign_delay_cylinder_1_4 =
@@ -72,6 +74,14 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
 
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, false);
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, true);
+
+    // semi-sequental injection temp
+    //GPIO_QUEUE_ADD(worker, 2, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false);
+    //GPIO_QUEUE_ADD(worker, 2, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true);
+
+    //GPIO_QUEUE_ADD(worker, 2, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, false);
+    //GPIO_QUEUE_ADD(worker, 2, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, true);
+
 }
 
 static inline void
@@ -217,6 +227,8 @@ static int32_t flipper_ecu_sync_worker_thread(void* arg) {
         if(events & FlipperECUSyncWorkerEventIgnitionSwitchedOn) {
             flipper_ecu_fuel_pump_notify_ignition_switched_on(
                 flipper_ecu_app_get_fuel_pump_worker(worker->ecu_app));
+            flipper_ecu_idle_valve_worker_notify_ignition_switched_on(
+                flipper_ecu_app_get_idle_valve_worker(worker->ecu_app));
         }
         furi_delay_tick(10);
     }

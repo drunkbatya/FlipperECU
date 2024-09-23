@@ -28,3 +28,8 @@ extern const GpioPin* const gpio_mcu_fuel_pump_out;
 
 extern const GpioPin* const gpio_mcu_idle_step;
 extern const GpioPin* const gpio_mcu_idle_direction;
+
+extern const GpioPin* const gpio_mcu_inj_1;
+extern const GpioPin* const gpio_mcu_inj_2;
+extern const GpioPin* const gpio_mcu_inj_3;
+extern const GpioPin* const gpio_mcu_inj_4;
