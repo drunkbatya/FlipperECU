@@ -8,6 +8,7 @@ struct FlipperECUDashboardView {
 
 typedef struct {
     const FlipperECUEngineStatus* engine_status;
+    FlipperECUAdcWorker* adc_worker;
 } FlipperECUDashboardViewModel;
 
 static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _model) {
@@ -22,11 +23,17 @@ static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _mode
     furi_string_printf(
         fstr, "Sync status: %s", view_dashboard_model->engine_status->synced ? "true" : "false");
     canvas_draw_str(canvas, 0, 30, furi_string_get_cstr(fstr));
-    furi_string_printf(fstr, "Maf value: %f kg/h", view_dashboard_model->engine_status->maf_value);
+    furi_string_printf(
+        fstr,
+        "TPS value: %.2f %%",
+        flipper_ecu_adc_worker_get_value_tps_full(view_dashboard_model->adc_worker));
     canvas_draw_str(canvas, 0, 40, furi_string_get_cstr(fstr));
-    furi_string_printf(fstr, "Inj time: %f ms", view_dashboard_model->engine_status->inj_time);
+    furi_string_printf(
+        fstr,
+        "Tps ADC: %f mv",
+        flipper_ecu_adc_worker_get_value_tps(view_dashboard_model->adc_worker));
     canvas_draw_str(canvas, 0, 50, furi_string_get_cstr(fstr));
-    furi_string_printf(fstr, "Maf ADC: %f mv", view_dashboard_model->engine_status->maf_adc);
+    furi_string_printf(fstr, "Inj time: %f ms", view_dashboard_model->engine_status->inj_time);
     canvas_draw_str(canvas, 0, 60, furi_string_get_cstr(fstr));
 
     furi_string_free(fstr);
@@ -41,8 +48,9 @@ static bool flipper_ecu_view_dashboard_input_callback(InputEvent* event, void* _
     return consumed;
 }
 
-FlipperECUDashboardView*
-    flipper_ecu_view_dashboard_alloc(const FlipperECUEngineStatus* engine_status) {
+FlipperECUDashboardView* flipper_ecu_view_dashboard_alloc(
+    FlipperECUApp* ecu_app,
+    const FlipperECUEngineStatus* engine_status) {
     FlipperECUDashboardView* view_dashboard = malloc(sizeof(FlipperECUDashboardView));
     view_dashboard->view = view_alloc();
     view_allocate_model(
@@ -53,7 +61,10 @@ FlipperECUDashboardView*
     with_view_model(
         view_dashboard->view,
         FlipperECUDashboardViewModel * model,
-        { model->engine_status = engine_status; },
+        {
+            model->engine_status = engine_status;
+            model->adc_worker = flipper_ecu_app_get_adc_worker(ecu_app);
+        },
         true);
     return view_dashboard;
 }

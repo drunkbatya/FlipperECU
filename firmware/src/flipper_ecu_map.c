@@ -234,22 +234,22 @@ int16_t flipper_ecu_map_interpolate_2dd(FlipperECUMap* map, int16_t key_x) {
     return ret;
 }
 int16_t flipper_ecu_map_interpolate_2d(FlipperECUMap* map, int16_t key_x) {
-    if (key_x < map->keys_x[0]) {
+    if(key_x < map->keys_x[0]) {
         return map->values[0];
     }
-    if (key_x > map->keys_x[map->map_x_size - 1]) {
+    if(key_x > map->keys_x[map->map_x_size - 1]) {
         return map->values[map->map_x_size - 1];
     }
     uint16_t i = 0;
-    for (; i < map->map_x_size - 1; i++) {
-        if (map->keys_x[i+1] > key_x) {
+    for(; i < map->map_x_size - 1; i++) {
+        if(map->keys_x[i + 1] > key_x) {
             break;
         }
     }
 
     /* interpolate */
-    uint16_t dx = map->keys_x[i+1] - map->keys_x[i];
-    int16_t dy = map->values[i+1] - map->values[i];
+    uint16_t dx = map->keys_x[i + 1] - map->keys_x[i];
+    int16_t dy = map->values[i + 1] - map->values[i];
     return map->values[i] + (key_x - map->keys_x[i]) * dy / dx;
 }
 

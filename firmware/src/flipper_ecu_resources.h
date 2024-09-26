@@ -2,6 +2,8 @@
 
 #include <furi.h>
 
+#include "workers/adc_worker/flipper_ecu_adc_worker.h"
+
 typedef enum {
     GPIO_ADC_MCU_1_MAP = 0,
     GPIO_ADC_MCU_2_TPS = 1,
@@ -14,7 +16,7 @@ typedef enum {
     GPIO_ADC_NONE = 8,
 } GpioAdcPins;
 
-typedef double (*Converter)(double value);
+typedef double (*Converter)(FlipperECUAdcWorker* worker, double value);
 
 typedef struct {
     const GpioPin* pin;

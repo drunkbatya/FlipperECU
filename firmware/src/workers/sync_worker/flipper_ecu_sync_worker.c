@@ -56,7 +56,8 @@ static double calc_inj_time(FlipperECUSyncWorker* worker) {
     const double inj_bandwidth = 1.9219; // mg/ms
     const double afr = 14.7;
     const double maf_value = maf_value_adc * 100000 / 3600000;
-    double conv_rpm = ((float)1 / (float)worker->engine_status->rpm) * 60 * 1000; // how many ms tooks 1 revolute
+    double conv_rpm =
+        ((float)1 / (float)worker->engine_status->rpm) * 60 * 1000; // how many ms tooks 1 revolute
     double inj_time = maf_value * conv_rpm / afr / (4 * 2) / inj_bandwidth;
     //inj_time = inj_time / 2;
     if(inj_time < (double)1.0) {

@@ -44,7 +44,7 @@ FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
     app->text_input = text_input_alloc();
     app->file_path = furi_string_alloc_set(STORAGE_APP_DATA_PATH_PREFIX);
 
-    app->view_dashboard = flipper_ecu_view_dashboard_alloc(&ecu_app->engine_status);
+    app->view_dashboard = flipper_ecu_view_dashboard_alloc(ecu_app, &ecu_app->engine_status);
     app->view_map_editor = flipper_ecu_view_map_editor_alloc();
     app->view_sensor_config = flipper_ecu_view_sensor_config_alloc();
     app->view_idle_manual = flipper_ecu_view_idle_manual_alloc(ecu_app);

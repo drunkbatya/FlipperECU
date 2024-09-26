@@ -14,8 +14,33 @@
 
 #define TAG "FlipperECUAdcWorker"
 
+double flipper_ecu_adc_worker_converter_basic(FlipperECUAdcWorker* worker, double input) {
+    UNUSED(worker);
+    return input;
+}
+
+double flipper_ecu_adc_worker_converter_tps(FlipperECUAdcWorker* worker, double input) {
+    UNUSED(worker);
+    double min = 800.0;
+    double max = 4500.0;
+    if(input < min) {
+        return 0.0;
+    } else if(input > max) {
+        return 100.0;
+    }
+    return (input - min) / (max - min) * 100;
+}
+
 double flipper_ecu_adc_worker_get_value_maf(FlipperECUAdcWorker* worker) {
     return worker->adc_converted_data[GPIO_ADC_MCU_5_GP];
+}
+
+double flipper_ecu_adc_worker_get_value_tps_full(FlipperECUAdcWorker* worker) {
+    return worker->adc_converted_data_full[GPIO_ADC_MCU_2_TPS];
+}
+
+double flipper_ecu_adc_worker_get_value_tps(FlipperECUAdcWorker* worker) {
+    return worker->adc_converted_data[GPIO_ADC_MCU_2_TPS];
 }
 
 static void flipper_ecu_adc_worker_dma_callback(void* context) {
@@ -152,7 +177,8 @@ static void flipper_ecu_adc_worker_convert_data_to_voltage(FlipperECUAdcWorker* 
             (double)__LL_ADC_CALC_DATA_TO_VOLTAGE(
                 2048, worker->adc_buf[index], LL_ADC_RESOLUTION_12B) /
             gpio_adc_pins[index].ext_voltage_div_ratio;
-        //worker->adc_converted_data_full[index] = gpio_adc_pins[index].converter(worker->adc_converted_data[index]);
+        worker->adc_converted_data_full[index] =
+            gpio_adc_pins[index].converter(worker, worker->adc_converted_data[index]);
     }
     worker->first_measurement_done = true;
 }
