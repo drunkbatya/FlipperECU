@@ -20,3 +20,4 @@ void flipper_ecu_idle_valve_worker_step(
     IdleValveDirection direction);
 uint16_t flipper_ecu_idle_valve_worker_get_current_position(FlipperECUIdleValveWorker* worker);
 void flipper_ecu_idle_valve_worker_notify_ignition_switched_on(FlipperECUIdleValveWorker* worker);
+void flipper_ecu_idle_valve_worker_move_to(FlipperECUIdleValveWorker* worker, uint16_t position);

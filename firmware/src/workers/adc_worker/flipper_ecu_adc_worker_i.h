@@ -9,6 +9,7 @@ struct FlipperECUAdcWorker {
     FlipperECUApp* ecu_app;
     uint16_t adc_buf[ADC_BUFFER_SIZE];
     double adc_converted_data[ADC_BUFFER_SIZE];
+    double adc_converted_data_full[ADC_BUFFER_SIZE];
     bool first_measurement_done;
 };
 

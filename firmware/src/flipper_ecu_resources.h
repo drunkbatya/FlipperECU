@@ -14,11 +14,14 @@ typedef enum {
     GPIO_ADC_NONE = 8,
 } GpioAdcPins;
 
+typedef double (*Converter)(double value);
+
 typedef struct {
     const GpioPin* pin;
     const uint32_t channel;
     const uint32_t rank;
     double ext_voltage_div_ratio;
+    Converter converter;
 } GpioPinAdcRecord;
 
 extern const GpioPinAdcRecord gpio_adc_pins[];
@@ -28,6 +31,9 @@ extern const GpioPin* const gpio_mcu_fuel_pump_out;
 
 extern const GpioPin* const gpio_mcu_idle_step;
 extern const GpioPin* const gpio_mcu_idle_direction;
+
+extern const GpioPin* const gpio_mcu_ign_1;
+extern const GpioPin* const gpio_mcu_ign_2;
 
 extern const GpioPin* const gpio_mcu_inj_1;
 extern const GpioPin* const gpio_mcu_inj_2;

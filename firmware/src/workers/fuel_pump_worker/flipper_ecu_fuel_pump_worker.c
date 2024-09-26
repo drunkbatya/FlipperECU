@@ -19,14 +19,14 @@ static int32_t flipper_ecu_fuel_pump_worker_thread(void* arg) {
             furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_ON_LEVEL);
             furi_delay_ms(FUEL_PUMP_POWER_OFF_TIMEOUT_MS);
             if(!worker->engine_status->synced) {
-                furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_OFF_LEVEL);
+                //furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_OFF_LEVEL);
             }
         }
         if(events & FlipperECUFuelPumpWorkerEventEngineRunning) {
             furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_ON_LEVEL);
         }
         if(events & FlipperECUFuelPumpWorkerEventEngineStopped) {
-            furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_OFF_LEVEL);
+            //furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_OFF_LEVEL);
         }
         furi_delay_tick(10);
     }

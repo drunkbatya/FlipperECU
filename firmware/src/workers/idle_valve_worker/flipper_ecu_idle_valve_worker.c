@@ -64,6 +64,8 @@ static int32_t flipper_ecu_idle_valve_worker_thread(void* arg) {
         }
         if(events & FlipperECUIdleValveWorkerEventIgnitionSwitchedOn) {
             flipper_ecu_idle_valve_worker_calibrate(worker);
+            flipper_ecu_idle_valve_worker_move_to(
+                worker, worker->engine_settings->idle_valve_position_on_ignition_on);
         }
         furi_delay_tick(10);
     }
@@ -248,11 +250,35 @@ void flipper_ecu_idle_valve_worker_calibrate(FlipperECUIdleValveWorker* worker) 
     worker->stop_timer_max_overflow_count = stop_timer_overflows;
     LL_TIM_SetAutoReload(TIM1, UINT16_MAX);
 
-    furi_hal_gpio_write(gpio_mcu_idle_direction, 1); // going back
+    furi_hal_gpio_write(gpio_mcu_idle_direction, 1); // going forward
     worker->stop_timer_current_overflow_count = 0;
     LL_LPTIM_StartCounter(LPTIM2, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
     LL_TIM_EnableCounter(TIM1);
     worker->current_position = 0;
+}
+
+void flipper_ecu_idle_valve_worker_move_to(FlipperECUIdleValveWorker* worker, uint16_t position) {
+    uint16_t steps = 0;
+    if(position > worker->current_position) {
+        steps = position - worker->current_position;
+        furi_hal_gpio_write(gpio_mcu_idle_direction, 1); // going forward
+    } else if(position < worker->current_position) {
+        steps = position + worker->current_position;
+        furi_hal_gpio_write(gpio_mcu_idle_direction, 0); // going backward
+    } else if(position == worker->current_position) {
+        return;
+    }
+    uint32_t timer_ticks = (64000000 / worker->engine_settings->idle_valve_pwm_freq) * steps;
+    uint16_t stop_timer_overflows = timer_ticks / UINT16_MAX;
+    worker->stop_timer_last_reload = timer_ticks % UINT16_MAX;
+    if(worker->stop_timer_last_reload) stop_timer_overflows++;
+    worker->stop_timer_max_overflow_count = stop_timer_overflows;
+    LL_TIM_SetAutoReload(TIM1, UINT16_MAX);
+
+    worker->stop_timer_current_overflow_count = 0;
+    LL_LPTIM_StartCounter(LPTIM2, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
+    LL_TIM_EnableCounter(TIM1);
+    worker->current_position = position;
 }
 
 void flipper_ecu_idle_valve_worker_notify_ignition_switched_on(FlipperECUIdleValveWorker* worker) {

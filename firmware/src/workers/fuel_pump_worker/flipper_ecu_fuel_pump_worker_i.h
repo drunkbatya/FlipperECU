@@ -2,7 +2,7 @@
 
 #include "flipper_ecu_fuel_pump_worker.h"
 
-#define FUEL_PUMP_POWER_OFF_TIMEOUT_MS 1000
+#define FUEL_PUMP_POWER_OFF_TIMEOUT_MS 3000
 #define FUEL_PUMP_OFF_LEVEL 0
 #define FUEL_PUMP_ON_LEVEL 1
 

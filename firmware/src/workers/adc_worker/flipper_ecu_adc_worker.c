@@ -14,6 +14,10 @@
 
 #define TAG "FlipperECUAdcWorker"
 
+double flipper_ecu_adc_worker_get_value_maf(FlipperECUAdcWorker* worker) {
+    return worker->adc_converted_data[GPIO_ADC_MCU_5_GP];
+}
+
 static void flipper_ecu_adc_worker_dma_callback(void* context) {
     FlipperECUAdcWorker* worker = context;
 
@@ -148,6 +152,7 @@ static void flipper_ecu_adc_worker_convert_data_to_voltage(FlipperECUAdcWorker* 
             (double)__LL_ADC_CALC_DATA_TO_VOLTAGE(
                 2048, worker->adc_buf[index], LL_ADC_RESOLUTION_12B) /
             gpio_adc_pins[index].ext_voltage_div_ratio;
+        //worker->adc_converted_data_full[index] = gpio_adc_pins[index].converter(worker->adc_converted_data[index]);
     }
     worker->first_measurement_done = true;
 }

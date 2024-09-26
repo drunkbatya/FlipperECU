@@ -152,18 +152,28 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         AlignTop,
         flipper_ecu_map_get_map_name(map_editor_model->map));
 
-    uint16_t step =
+    uint16_t x_step =
         main_field_plot_width / (flipper_ecu_map_get_map_x_size(map_editor_model->map) - 1);
+    uint8_t x_scale = 1;
+    if(x_step == 0) {
+        x_step = 1;
+        x_scale =
+            (flipper_ecu_map_get_map_x_size(map_editor_model->map) - 1) / main_field_plot_width;
+        if((flipper_ecu_map_get_map_x_size(map_editor_model->map) - 1) % main_field_plot_width) {
+            x_scale += 1;
+        }
+    }
+
     uint16_t value_range = flipper_ecu_map_get_value_max(map_editor_model->map) -
                            flipper_ecu_map_get_value_min(map_editor_model->map);
-    uint8_t scale = 1;
+    uint8_t y_scale = 1;
     uint8_t y_step = main_field_plot_height / value_range;
     if(y_step == 0) {
         y_step = 1;
         if(main_field_plot_height % value_range) {
-            scale = value_range / main_field_plot_height;
+            y_scale = value_range / main_field_plot_height;
             if(value_range % main_field_plot_height) {
-                scale += 1;
+                y_scale += 1;
             }
         }
     }
@@ -184,8 +194,8 @@ static void flipper_ecu_view_map_editor_draw_callback(Canvas* canvas, void* _mod
         } else if(flipper_ecu_map_get_value_min(map_editor_model->map) > 0) {
             current_value_to_calc -= flipper_ecu_map_get_value_min(map_editor_model->map);
         }
-        uint32_t x = (x_model * step) + main_field_start_x + PLOT_PADDING_PX;
-        uint32_t y = main_field_plot_height - (current_value_to_calc * y_step / scale) +
+        uint32_t x = (x_model * x_step / x_scale) + main_field_start_x + PLOT_PADDING_PX;
+        uint32_t y = main_field_plot_height - (current_value_to_calc * y_step / y_scale) +
                      main_field_start_y + PLOT_PADDING_PX;
 
         // if engine is running and current key is last used

@@ -3,6 +3,10 @@
 #include <furi_hal_resources.h>
 #include <stm32wbxx_ll_adc.h>
 
+static double basic_converter(double input) {
+    return input;
+}
+
 //static ouble flipper_ecu_resources_convert
 
 // adc pins
@@ -24,6 +28,8 @@ const GpioPin* const gpio_mcu_idle_direction = &gpio_ibutton; // pb14
 const GpioPin* const gpio_mcu_idle_step = &gpio_ext_pa4;
 
 // ignition pins
+const GpioPin* const gpio_mcu_ign_1 = &gpio_ext_pe4;
+const GpioPin* const gpio_mcu_ign_2 = &gpio_ext_pb4;
 
 // injectors pins
 const GpioPin* const gpio_mcu_inj_1 = &gpio_ext_pa6;
@@ -40,35 +46,43 @@ const GpioPinAdcRecord gpio_adc_pins[] = {
     {.pin = gpio_adc_mcu_1_map,
      .channel = LL_ADC_CHANNEL_1,
      .rank = LL_ADC_REG_RANK_1,
-     .ext_voltage_div_ratio = 0.4},
+     .ext_voltage_div_ratio = 0.4,
+     .converter = basic_converter},
     {.pin = gpio_adc_mcu_2_tps,
      .channel = LL_ADC_CHANNEL_2,
      .rank = LL_ADC_REG_RANK_2,
-     .ext_voltage_div_ratio = 0.4},
+     .ext_voltage_div_ratio = 0.4,
+     .converter = basic_converter},
     {.pin = gpio_adc_mcu_3_air_temp,
      .channel = LL_ADC_CHANNEL_4,
      .rank = LL_ADC_REG_RANK_3,
-     .ext_voltage_div_ratio = 0.4},
+     .ext_voltage_div_ratio = 0.4,
+     .converter = basic_converter},
     {.pin = gpio_adc_mcu_4_water_temp,
      .channel = LL_ADC_CHANNEL_5,
      .rank = LL_ADC_REG_RANK_4,
-     .ext_voltage_div_ratio = 0.4},
+     .ext_voltage_div_ratio = 0.4,
+     .converter = basic_converter},
     {.pin = gpio_adc_mcu_5_gp,
-     .channel = LL_ADC_CHANNEL_5,
-     .rank = LL_ADC_REG_RANK_5,
-     .ext_voltage_div_ratio = 0.4},
-    {.pin = gpio_adc_mcu_6_gp,
      .channel = LL_ADC_CHANNEL_6,
+     .rank = LL_ADC_REG_RANK_5,
+     .ext_voltage_div_ratio = 0.4,
+     .converter = basic_converter},
+    {.pin = gpio_adc_mcu_6_gp,
+     .channel = LL_ADC_CHANNEL_7,
      .rank = LL_ADC_REG_RANK_6,
-     .ext_voltage_div_ratio = 0.4},
+     .ext_voltage_div_ratio = 0.4,
+     .converter = basic_converter},
     {.pin = gpio_adc_mcu_7_vin,
      .channel = LL_ADC_CHANNEL_14,
      .rank = LL_ADC_REG_RANK_7,
-     .ext_voltage_div_ratio = 0.109},
+     .ext_voltage_div_ratio = 0.109,
+     .converter = basic_converter},
     {.pin = gpio_adc_mcu_8_5v,
      .channel = LL_ADC_CHANNEL_10,
      .rank = LL_ADC_REG_RANK_8,
-     .ext_voltage_div_ratio = 0.4},
+     .ext_voltage_div_ratio = 0.4,
+     .converter = basic_converter},
 };
 
 const size_t gpio_adc_pins_size = COUNT_OF(gpio_adc_pins);

@@ -3,7 +3,7 @@
 void flipper_ecu_scene_map_editor_on_enter(void* context) {
     FlipperECUGui* app = context;
     flipper_ecu_view_map_editor_load_map(
-        app->view_map_editor, app->ecu_app->engine_settings->maps[IGN_MAP]);
+        app->view_map_editor, app->ecu_app->engine_settings->maps[MAF_DECODE_MAP]);
     view_dispatcher_switch_to_view(app->view_dispatcher, FlipperECUGuiViewMapEditor);
 }
 

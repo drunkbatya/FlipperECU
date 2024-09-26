@@ -1,6 +1,8 @@
 #include "flipper_ecu_sync_worker_i.h"
 #include "flipper_ecu_sync_worker_event_queue.h"
 
+#include "../../flipper_ecu_resources.h"
+
 #include <furi_hal_resources.h>
 #include <furi_hal_bus.h>
 #include <furi_hal_power.h>
@@ -11,8 +13,6 @@
 
 #define GPIO_IGNITION_PIN_1 &gpio_ext_pe4
 #define GPIO_IGNITION_PIN_2 &gpio_ext_pb4
-//#define GPIO_IGNITION_PIN_3 &gpio_ext_pc3
-//#define GPIO_IGNITION_PIN_4 &gpio_ext_pc4
 
 #define GPIO_TIMER TIM2
 #define GPIO_TIMER_BUS FuriHalBusTIM2
@@ -39,8 +39,34 @@ static inline uint32_t ms_to_ticks(uint32_t ms) {
     return ((SystemCoreClock / 1000) * ms);
 }
 
+static inline uint32_t ms_to_ticks_double(double ms) {
+    return (uint32_t)(((double)SystemCoreClock / (double)1000) * ms);
+}
+
 static uint32_t degrees_to_ticks(uint32_t period_per_tooth, uint8_t degreese) {
     return (period_per_tooth / CKPS_DEGREES_PER_INTERVAL) * degreese;
+}
+
+static double calc_inj_time(FlipperECUSyncWorker* worker) {
+    FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
+    worker->engine_status->maf_adc = flipper_ecu_adc_worker_get_value_maf(adc_worker);
+    double maf_value_adc = flipper_ecu_map_interpolate_2d(
+        worker->engine_settings->maps[MAF_DECODE_MAP], worker->engine_status->maf_adc);
+    worker->engine_status->maf_value = maf_value_adc / 10;
+    const double inj_bandwidth = 1.9219; // mg/ms
+    const double afr = 14.7;
+    const double maf_value = maf_value_adc * 100000 / 3600000;
+    double conv_rpm = ((float)1 / (float)worker->engine_status->rpm) * 60 * 1000; // how many ms tooks 1 revolute
+    double inj_time = maf_value * conv_rpm / afr / (4 * 2) / inj_bandwidth;
+    //inj_time = inj_time / 2;
+    if(inj_time < (double)1.0) {
+        inj_time = 1;
+    }
+    if(inj_time > (double)50.0) {
+        inj_time = 50;
+    }
+    worker->engine_status->inj_time = inj_time;
+    return inj_time;
 }
 
 // TODO: variable cylynder count and mode
@@ -69,19 +95,26 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
         degrees_to_ticks(period_per_tooth, worker->engine_status->ign_angle);
     uint32_t dwell = ms_to_ticks(3);
 
-    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false);
-    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true);
+    // semi-sequental injection temp
+    uint32_t inj_delay_cylinder_1_4 = ign_delay_cylinder_1_4 / 2;
+    uint32_t inj_delay_cylinder_2_3 = ign_delay_cylinder_2_3 / 2;
+    uint32_t inj_dwell = ms_to_ticks_double(1.22);
+    uint32_t inj_time_new = ms_to_ticks_double(calc_inj_time(worker));
+    UNUSED(inj_time_new);
+    uint32_t inj_time = ms_to_ticks_double(4.5);
+    // uint32_t inj_time = inj_time_new;
 
+    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_1_4 - inj_dwell, gpio_mcu_inj_1, false); // on
+    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_1_4 + inj_time, gpio_mcu_inj_1, true); // off
+        //
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false); // on
+    GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true); // off
+
+    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_2_3 - inj_dwell, gpio_mcu_inj_2, false); // on
+    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_2_3 + inj_time, gpio_mcu_inj_2, true); // off
+        //
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, false);
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, true);
-
-    // semi-sequental injection temp
-    //GPIO_QUEUE_ADD(worker, 2, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false);
-    //GPIO_QUEUE_ADD(worker, 2, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true);
-
-    //GPIO_QUEUE_ADD(worker, 2, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, false);
-    //GPIO_QUEUE_ADD(worker, 2, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, true);
-
 }
 
 static inline void
@@ -150,45 +183,14 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
         FURI_CRITICAL_ENTER();
         if(!GPIO_QUEUE_IS_EMPTY(worker, 1)) {
             GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 1);
+            if(event->gpio_pin == gpio_mcu_inj_1) {
+                furi_hal_gpio_write(gpio_mcu_inj_4, event->pin_state);
+            } else if(event->gpio_pin == gpio_mcu_inj_2) {
+                furi_hal_gpio_write(gpio_mcu_inj_3, event->pin_state);
+            }
             furi_hal_gpio_write(event->gpio_pin, event->pin_state);
             if(event->next_compare_value != 0) {
                 LL_TIM_OC_SetCompareCH1(GPIO_TIMER, event->next_compare_value);
-            }
-        }
-        FURI_CRITICAL_EXIT();
-    }
-    if(LL_TIM_IsActiveFlag_CC2(GPIO_TIMER)) {
-        LL_TIM_ClearFlag_CC2(GPIO_TIMER);
-        FURI_CRITICAL_ENTER();
-        if(!GPIO_QUEUE_IS_EMPTY(worker, 2)) {
-            GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 2);
-            furi_hal_gpio_write(event->gpio_pin, event->pin_state);
-            if(event->next_compare_value != 0) {
-                LL_TIM_OC_SetCompareCH2(GPIO_TIMER, event->next_compare_value);
-            }
-        }
-        FURI_CRITICAL_EXIT();
-    }
-    if(LL_TIM_IsActiveFlag_CC3(GPIO_TIMER)) {
-        LL_TIM_ClearFlag_CC3(GPIO_TIMER);
-        FURI_CRITICAL_ENTER();
-        if(!GPIO_QUEUE_IS_EMPTY(worker, 3)) {
-            GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 3);
-            furi_hal_gpio_write(event->gpio_pin, event->pin_state);
-            if(event->next_compare_value != 0) {
-                LL_TIM_OC_SetCompareCH3(GPIO_TIMER, event->next_compare_value);
-            }
-        }
-        FURI_CRITICAL_EXIT();
-    }
-    if(LL_TIM_IsActiveFlag_CC4(GPIO_TIMER)) {
-        LL_TIM_ClearFlag_CC4(GPIO_TIMER);
-        FURI_CRITICAL_ENTER();
-        if(!GPIO_QUEUE_IS_EMPTY(worker, 4)) {
-            GPIOTimerEvent* event = GPIO_QUEUE_GET(worker, 4);
-            furi_hal_gpio_write(event->gpio_pin, event->pin_state);
-            if(event->next_compare_value != 0) {
-                LL_TIM_OC_SetCompareCH4(GPIO_TIMER, event->next_compare_value);
             }
         }
         FURI_CRITICAL_EXIT();
@@ -200,8 +202,13 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
 
 static void flipper_ecu_sync_worker_gpio_default(FlipperECUSyncWorker* worker) {
     UNUSED(worker);
-    furi_hal_gpio_write(GPIO_IGNITION_PIN_1, 0);
-    furi_hal_gpio_write(GPIO_IGNITION_PIN_2, 0);
+    furi_hal_gpio_write(GPIO_IGNITION_PIN_1, 1); // off
+    furi_hal_gpio_write(GPIO_IGNITION_PIN_2, 1); // off
+
+    furi_hal_gpio_write(gpio_mcu_inj_1, 1); // off
+    furi_hal_gpio_write(gpio_mcu_inj_2, 1); // off
+    furi_hal_gpio_write(gpio_mcu_inj_3, 1); // off
+    furi_hal_gpio_write(gpio_mcu_inj_4, 1); // off
 }
 
 static int32_t flipper_ecu_sync_worker_thread(void* arg) {
@@ -305,19 +312,28 @@ static void flipper_ecu_sync_worker_gpio_timer_deinit(FlipperECUSyncWorker* work
     LL_TIM_DisableIT_UPDATE(GPIO_TIMER);
     furi_hal_interrupt_set_isr(GPIO_TIMER_ISR_ID, NULL, NULL);
     furi_hal_bus_disable(GPIO_TIMER_BUS);
+
     furi_hal_gpio_init_ex(
         GPIO_IGNITION_PIN_1, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
     furi_hal_gpio_init_ex(
         GPIO_IGNITION_PIN_2, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
-    //furi_hal_gpio_init_ex(
-    //    GPIO_IGNITION_PIN_3, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
-    //furi_hal_gpio_init_ex(
-    //    GPIO_IGNITION_PIN_4, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
+
+    furi_hal_gpio_init_ex(
+        gpio_mcu_inj_1, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
+    furi_hal_gpio_init_ex(
+        gpio_mcu_inj_2, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
+    furi_hal_gpio_init_ex(
+        gpio_mcu_inj_3, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
+    furi_hal_gpio_init_ex(
+        gpio_mcu_inj_4, GpioModeAnalog, GpioPullNo, GpioSpeedLow, GpioAltFnUnused);
 }
 
 static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker) {
     UNUSED(worker);
     //furi_hal_bus_enable(GPIO_TIMER_BUS);
+
+    furi_hal_gpio_write(GPIO_IGNITION_PIN_1, 1); // off
+    furi_hal_gpio_write(GPIO_IGNITION_PIN_2, 1); // off
 
     furi_hal_gpio_init_ex(
         GPIO_IGNITION_PIN_1,
@@ -333,19 +349,22 @@ static void flipper_ecu_sync_worker_gpio_timer_init(FlipperECUSyncWorker* worker
         GpioSpeedVeryHigh,
         GpioAltFnUnused);
 
-    //furi_hal_gpio_init_ex(
-    //    GPIO_IGNITION_PIN_3,
-    //    GpioModeOutputPushPull,
-    //    GpioPullDown,
-    //    GpioSpeedVeryHigh,
-    //    GpioAltFnUnused);
+    furi_hal_gpio_write(gpio_mcu_inj_1, 1); // off
+    furi_hal_gpio_write(gpio_mcu_inj_2, 1); // off
+    furi_hal_gpio_write(gpio_mcu_inj_3, 1); // off
+    furi_hal_gpio_write(gpio_mcu_inj_4, 1); // off
 
-    //furi_hal_gpio_init_ex(
-    //    GPIO_IGNITION_PIN_4,
-    //    GpioModeOutputPushPull,
-    //    GpioPullDown,
-    //    GpioSpeedVeryHigh,
-    //    GpioAltFnUnused);
+    furi_hal_gpio_init_ex(
+        gpio_mcu_inj_1, GpioModeOutputPushPull, GpioPullDown, GpioSpeedVeryHigh, GpioAltFnUnused);
+
+    furi_hal_gpio_init_ex(
+        gpio_mcu_inj_2, GpioModeOutputPushPull, GpioPullDown, GpioSpeedVeryHigh, GpioAltFnUnused);
+
+    furi_hal_gpio_init_ex(
+        gpio_mcu_inj_3, GpioModeOutputPushPull, GpioPullDown, GpioSpeedVeryHigh, GpioAltFnUnused);
+
+    furi_hal_gpio_init_ex(
+        gpio_mcu_inj_4, GpioModeOutputPushPull, GpioPullDown, GpioSpeedVeryHigh, GpioAltFnUnused);
 
     //LL_TIM_EnableIT_CC1(GPIO_TIMER);
     //LL_TIM_EnableIT_UPDATE(GPIO_TIMER);
@@ -402,7 +421,7 @@ void flipper_ecu_sync_worker_start(FlipperECUSyncWorker* worker) {
 }
 
 void flipper_ecu_sync_worker_load_engine_config(FlipperECUSyncWorker* worker) {
-    worker->engine_config.ckps_polarity = CKPSPolatityFalling;
+    worker->engine_config.ckps_polarity = CKPSPolatityRasing;
 }
 
 FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(

@@ -2,7 +2,7 @@
 
 #include "flipper_ecu_sync_worker.h"
 
-#define GPIO_EVENTS_MAX_PER_CHANNEL 4
+#define GPIO_EVENTS_MAX_PER_CHANNEL 8
 
 typedef struct {
     bool pin_state;
