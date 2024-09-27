@@ -45,6 +45,7 @@ static void flipper_ecu_idle_valve_worker_stop_timer_isr(void* context) {
                 LL_TIM_DisableCounter(TIM1);
                 LL_LPTIM_StartCounter(
                     LPTIM2, LL_LPTIM_OPERATING_MODE_ONESHOT); // disabling continuous mode
+                worker->calibration_done = true;
             }
         }
     }
@@ -242,6 +243,7 @@ void flipper_ecu_idle_valve_worker_step(
 
 void flipper_ecu_idle_valve_worker_calibrate(FlipperECUIdleValveWorker* worker) {
     worker->calibration_ongoing = true;
+    worker->calibration_done = false;
     uint16_t steps = worker->engine_settings->idle_valve_total_steps;
     uint32_t timer_ticks = (64000000 / worker->engine_settings->idle_valve_pwm_freq) * steps;
     uint16_t stop_timer_overflows = timer_ticks / UINT16_MAX;
@@ -254,6 +256,7 @@ void flipper_ecu_idle_valve_worker_calibrate(FlipperECUIdleValveWorker* worker) 
     worker->stop_timer_current_overflow_count = 0;
     LL_LPTIM_StartCounter(LPTIM2, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
     LL_TIM_EnableCounter(TIM1);
+    while(!worker->calibration_done) furi_delay_tick(1);
     worker->current_position = 0;
 }
 

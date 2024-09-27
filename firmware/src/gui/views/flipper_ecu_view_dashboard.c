@@ -30,8 +30,8 @@ static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _mode
     canvas_draw_str(canvas, 0, 40, furi_string_get_cstr(fstr));
     furi_string_printf(
         fstr,
-        "Tps ADC: %f mv",
-        flipper_ecu_adc_worker_get_value_tps(view_dashboard_model->adc_worker));
+        "MAP ADC: %f mv",
+        flipper_ecu_adc_worker_get_value_map(view_dashboard_model->adc_worker));
     canvas_draw_str(canvas, 0, 50, furi_string_get_cstr(fstr));
     furi_string_printf(fstr, "Inj time: %f ms", view_dashboard_model->engine_status->inj_time);
     canvas_draw_str(canvas, 0, 60, furi_string_get_cstr(fstr));

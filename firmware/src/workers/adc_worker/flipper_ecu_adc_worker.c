@@ -43,6 +43,10 @@ double flipper_ecu_adc_worker_get_value_tps(FlipperECUAdcWorker* worker) {
     return worker->adc_converted_data[GPIO_ADC_MCU_2_TPS];
 }
 
+double flipper_ecu_adc_worker_get_value_map(FlipperECUAdcWorker* worker) {
+    return worker->adc_converted_data[GPIO_ADC_MCU_1_MAP];
+}
+
 static void flipper_ecu_adc_worker_dma_callback(void* context) {
     FlipperECUAdcWorker* worker = context;
 

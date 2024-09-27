@@ -47,7 +47,7 @@ static uint32_t degrees_to_ticks(uint32_t period_per_tooth, uint8_t degreese) {
     return (period_per_tooth / CKPS_DEGREES_PER_INTERVAL) * degreese;
 }
 
-static double calc_inj_time(FlipperECUSyncWorker* worker) {
+static double calc_inj_time_maf(FlipperECUSyncWorker* worker) {
     FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
     worker->engine_status->maf_adc = flipper_ecu_adc_worker_get_value_maf(adc_worker);
     double maf_value_adc = flipper_ecu_map_interpolate_2d(
@@ -59,6 +59,24 @@ static double calc_inj_time(FlipperECUSyncWorker* worker) {
     double conv_rpm =
         ((float)1 / (float)worker->engine_status->rpm) * 60 * 1000; // how many ms tooks 1 revolute
     double inj_time = maf_value * conv_rpm / afr / (4 * 2) / inj_bandwidth;
+    //inj_time = inj_time / 2;
+    if(inj_time < (double)1.0) {
+        inj_time = 1;
+    }
+    if(inj_time > (double)50.0) {
+        inj_time = 50;
+    }
+    worker->engine_status->inj_time = inj_time;
+    return inj_time;
+}
+
+static double calc_inj_time(FlipperECUSyncWorker* worker) {
+    UNUSED(calc_inj_time_maf);
+    FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
+    double inj_time = flipper_ecu_map_interpolate_2d(
+                          worker->engine_settings->maps[TPS_TEST_MAP],
+                          flipper_ecu_adc_worker_get_value_tps_full(adc_worker)) /
+                      (double)10;
     //inj_time = inj_time / 2;
     if(inj_time < (double)1.0) {
         inj_time = 1;
@@ -97,25 +115,25 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     uint32_t dwell = ms_to_ticks(3);
 
     // semi-sequental injection temp
-    uint32_t inj_delay_cylinder_1_4 = ign_delay_cylinder_1_4 / 2;
-    uint32_t inj_delay_cylinder_2_3 = ign_delay_cylinder_2_3 / 2;
+    uint32_t inj_delay_cylinder_1_4 = timer_ticks_to_tdc_cylinder_1_4;
+    uint32_t inj_delay_cylinder_2_3 = timer_ticks_to_tdc_cylinder_2_3;
     uint32_t inj_dwell = ms_to_ticks_double(1.22);
     uint32_t inj_time_new = ms_to_ticks_double(calc_inj_time(worker));
-    UNUSED(inj_time_new);
-    uint32_t inj_time = ms_to_ticks_double(4.5);
-    // uint32_t inj_time = inj_time_new;
+    //UNUSED(inj_time_new);
+    //uint32_t inj_time = ms_to_ticks_double(6);
+    uint32_t inj_time = inj_time_new;
 
-    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_1_4 - inj_dwell, gpio_mcu_inj_1, false); // on
-    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_1_4 + inj_time, gpio_mcu_inj_1, true); // off
-        //
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false); // on
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true); // off
 
-    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_2_3 - inj_dwell, gpio_mcu_inj_2, false); // on
-    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_2_3 + inj_time, gpio_mcu_inj_2, true); // off
-        //
+    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_1_4 - inj_dwell, gpio_mcu_inj_1, false); // on
+    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_1_4 + inj_time, gpio_mcu_inj_1, true); // off
+
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, false);
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, true);
+    //
+    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_2_3 - inj_dwell, gpio_mcu_inj_2, false); // on
+    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_2_3 + inj_time, gpio_mcu_inj_2, true); // off
 }
 
 static inline void

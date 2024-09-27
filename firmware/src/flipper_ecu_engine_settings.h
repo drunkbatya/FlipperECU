@@ -7,7 +7,13 @@
 
 #define ENGINE_SETTINGS_FILE_EXT ".ass"
 
-typedef enum { IGN_MAP, IGN_TPS_MAP, MAF_DECODE_MAP, MAP_COUNT } FlipperECUEngineSettingsMaps;
+typedef enum {
+    IGN_MAP,
+    IGN_TPS_MAP,
+    MAF_DECODE_MAP,
+    TPS_TEST_MAP,
+    MAP_COUNT
+} FlipperECUEngineSettingsMaps;
 
 typedef struct {
     FlipperECUMap* maps[MAP_COUNT];

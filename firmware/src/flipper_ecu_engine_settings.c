@@ -20,6 +20,11 @@ FlipperECUEngineSettings* flipper_ecu_engine_settings_alloc(void) {
     flipper_ecu_map_set_names_2d(set->maps[MAF_DECODE_MAP], "MAF decode", "mV", "kg/h");
     flipper_ecu_map_set_ranges(set->maps[MAF_DECODE_MAP], -384, 7997);
 
+    // TPS test map
+    set->maps[TPS_TEST_MAP] = flipper_ecu_map_create_alloc_2d(16);
+    flipper_ecu_map_set_names_2d(set->maps[TPS_TEST_MAP], "Inj time", "TPS %", "ms*10");
+    flipper_ecu_map_set_ranges(set->maps[TPS_TEST_MAP], 0, 300);
+
     return set;
 }
 
@@ -94,8 +99,14 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
     flipper_ecu_map_set_keys_x(set->maps[MAF_DECODE_MAP], maf_keys);
     flipper_ecu_map_set_values_2d(set->maps[MAF_DECODE_MAP], maf_values);
 
+    const int16_t tps_test_keys[16] = {0, 2, 4, 6, 8, 10, 14, 18, 23, 29, 37, 46, 56, 66, 80, 100};
+    const int16_t tps_test_values[16] = {
+        55, 67, 73, 88, 66, 70, 71, 74, 76, 77, 78, 78, 72, 70, 66, 55};
+    flipper_ecu_map_set_keys_x(set->maps[TPS_TEST_MAP], tps_test_keys);
+    flipper_ecu_map_set_values_2d(set->maps[TPS_TEST_MAP], tps_test_values);
+
     set->idle_valve_pwm_freq = 500;
     set->idle_valve_total_steps = 255;
 
-    set->idle_valve_position_on_ignition_on = 100;
+    set->idle_valve_position_on_ignition_on = 70;
 }

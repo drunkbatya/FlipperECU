@@ -11,6 +11,7 @@ struct FlipperECUIdleValveWorker {
     FlipperECUEngineSettings* engine_settings;
     IdleValveDirection direction;
     bool calibration_ongoing;
+    bool calibration_done;
     uint16_t current_position;
     uint16_t stop_timer_max_overflow_count;
     uint16_t stop_timer_last_reload;
