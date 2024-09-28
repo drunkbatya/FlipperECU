@@ -233,7 +233,7 @@ int16_t flipper_ecu_map_interpolate_2dd(FlipperECUMap* map, int16_t key_x) {
     }
     return ret;
 }
-int16_t flipper_ecu_map_interpolate_2d(FlipperECUMap* map, int16_t key_x) {
+int16_t flipper_ecu_map_interpolate_2d(const FlipperECUMap* map, int16_t key_x) {
     if(key_x < map->keys_x[0]) {
         return map->values[0];
     }

@@ -47,31 +47,30 @@ static uint32_t degrees_to_ticks(uint32_t period_per_tooth, uint8_t degreese) {
     return (period_per_tooth / CKPS_DEGREES_PER_INTERVAL) * degreese;
 }
 
-static double calc_inj_time_maf(FlipperECUSyncWorker* worker) {
-    FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
-    worker->engine_status->maf_adc = flipper_ecu_adc_worker_get_value_maf(adc_worker);
-    double maf_value_adc = flipper_ecu_map_interpolate_2d(
-        worker->engine_settings->maps[MAF_DECODE_MAP], worker->engine_status->maf_adc);
-    worker->engine_status->maf_value = maf_value_adc / 10;
-    const double inj_bandwidth = 1.9219; // mg/ms
-    const double afr = 14.7;
-    const double maf_value = maf_value_adc * 100000 / 3600000;
-    double conv_rpm =
-        ((float)1 / (float)worker->engine_status->rpm) * 60 * 1000; // how many ms tooks 1 revolute
-    double inj_time = maf_value * conv_rpm / afr / (4 * 2) / inj_bandwidth;
-    //inj_time = inj_time / 2;
-    if(inj_time < (double)1.0) {
-        inj_time = 1;
-    }
-    if(inj_time > (double)50.0) {
-        inj_time = 50;
-    }
-    worker->engine_status->inj_time = inj_time;
-    return inj_time;
-}
+//static double calc_inj_time_maf(FlipperECUSyncWorker* worker) {
+//    FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
+//    worker->engine_status->maf_adc = flipper_ecu_adc_worker_get_value_maf(adc_worker);
+//    double maf_value_adc = flipper_ecu_map_interpolate_2d(
+//        worker->engine_settings->maps[MAF_DECODE_MAP], worker->engine_status->maf_adc);
+//    worker->engine_status->maf_value = maf_value_adc / 10;
+//    const double inj_bandwidth = 1.9219; // mg/ms
+//    const double afr = 14.7;
+//    const double maf_value = maf_value_adc * 100000 / 3600000;
+//    double conv_rpm =
+//        ((float)1 / (float)worker->engine_status->rpm) * 60 * 1000; // how many ms tooks 1 revolute
+//    double inj_time = maf_value * conv_rpm / afr / (4 * 2) / inj_bandwidth;
+//    //inj_time = inj_time / 2;
+//    if(inj_time < (double)1.0) {
+//        inj_time = 1;
+//    }
+//    if(inj_time > (double)50.0) {
+//        inj_time = 50;
+//    }
+//    worker->engine_status->inj_time = inj_time;
+//    return inj_time;
+//}
 
-static double calc_inj_time(FlipperECUSyncWorker* worker) {
-    UNUSED(calc_inj_time_maf);
+static double calc_inj_time_tps_test(FlipperECUSyncWorker* worker) {
     FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
     double inj_time = flipper_ecu_map_interpolate_2d(
                           worker->engine_settings->maps[TPS_TEST_MAP],
@@ -84,22 +83,27 @@ static double calc_inj_time(FlipperECUSyncWorker* worker) {
     if(inj_time > (double)50.0) {
         inj_time = 50;
     }
-    worker->engine_status->inj_time = inj_time;
     return inj_time;
 }
 
 // TODO: variable cylynder count and mode
 static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker* worker) {
     // we r captured sync period if we r here, to get actual period we need to divide sync period by missed teeth count
+    FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
     uint32_t period_per_tooth = worker->previous_period;
     if(!worker->engine_status->synced) { // if engine is running again after stop
         furi_thread_flags_set(
             furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventEngineRunningAgain);
     }
     worker->engine_status->synced = true;
-    worker->engine_status->rpm = SystemCoreClock / period_per_tooth;
-    worker->engine_status->ign_angle = flipper_ecu_map_interpolate_2d(
-        worker->engine_settings->maps[IGN_MAP], worker->engine_status->rpm);
+    uint16_t rpm = SystemCoreClock / period_per_tooth;
+    worker->engine_status->rpm = rpm;
+
+    if(rpm < worker->engine_settings->cranking_end_rpm) { // cranking
+    } else { // work
+    }
+    worker->engine_status->ign_angle =
+        flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
 
     // semi-sequental ignition temp
     uint32_t timer_ticks_to_tdc_cylinder_1_4 =
@@ -117,23 +121,33 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     // semi-sequental injection temp
     uint32_t inj_delay_cylinder_1_4 = timer_ticks_to_tdc_cylinder_1_4;
     uint32_t inj_delay_cylinder_2_3 = timer_ticks_to_tdc_cylinder_2_3;
-    uint32_t inj_dwell = ms_to_ticks_double(1.22);
-    uint32_t inj_time_new = ms_to_ticks_double(calc_inj_time(worker));
-    //UNUSED(inj_time_new);
-    //uint32_t inj_time = ms_to_ticks_double(6);
-    uint32_t inj_time = inj_time_new;
+
+    double inj_dead_time = flipper_ecu_map_interpolate_2d(
+        worker->engine_settings->maps[INJ_DEAD_TIME],
+        (int16_t)flipper_ecu_adc_worker_get_value_vbat(adc_worker));
+    uint32_t inj_dwell = ms_to_ticks_double(inj_dead_time);
+    worker->engine_status->inj_dead_time = inj_dead_time;
+
+    double inj_time = calc_inj_time_tps_test(worker);
+    worker->engine_status->inj_time = inj_time;
+    inj_time /= (double)2; // semi-sequental squirt
+    uint32_t inj_time_ticks = ms_to_ticks_double(inj_time);
 
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false); // on
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true); // off
 
     GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_1_4 - inj_dwell, gpio_mcu_inj_1, false); // on
-    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_1_4 + inj_time, gpio_mcu_inj_1, true); // off
+    GPIO_QUEUE_ADD(
+        worker, 1, inj_delay_cylinder_1_4 + inj_time_ticks, gpio_mcu_inj_1, true); // off
 
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3 - dwell, GPIO_IGNITION_PIN_2, false);
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_2_3, GPIO_IGNITION_PIN_2, true);
     //
     GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_2_3 - inj_dwell, gpio_mcu_inj_2, false); // on
-    GPIO_QUEUE_ADD(worker, 1, inj_delay_cylinder_2_3 + inj_time, gpio_mcu_inj_2, true); // off
+    GPIO_QUEUE_ADD(
+        worker, 1, inj_delay_cylinder_2_3 + inj_time_ticks, gpio_mcu_inj_2, true); // off
+
+    worker->engine_status->sync_processing_time = LL_TIM_GetCounter(GPIO_TIMER);
 }
 
 static inline void

@@ -8,9 +8,9 @@
 #define ENGINE_SETTINGS_FILE_EXT ".ass"
 
 typedef enum {
+    INJ_DEAD_TIME,
+    AIR_TEMP_SENSOR,
     IGN_MAP,
-    IGN_TPS_MAP,
-    MAF_DECODE_MAP,
     TPS_TEST_MAP,
     MAP_COUNT
 } FlipperECUEngineSettingsMaps;
@@ -22,7 +22,9 @@ typedef struct {
     uint16_t idle_valve_total_steps;
     uint16_t idle_valve_pwm_freq;
 
+    // cranking
     uint16_t idle_valve_position_on_ignition_on;
+    uint16_t cranking_end_rpm;
 } FlipperECUEngineSettings;
 
 void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set);

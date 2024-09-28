@@ -1,4 +1,5 @@
 ADD_SCENE(flipper_ecu, start, Start)
+ADD_SCENE(flipper_ecu, exit_warning, ExitWarning)
 ADD_SCENE(flipper_ecu, config, Config)
 ADD_SCENE(flipper_ecu, config_ckps, ConfigCKPS)
 ADD_SCENE(flipper_ecu, config_tps, ConfigTPS)

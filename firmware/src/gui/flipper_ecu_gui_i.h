@@ -54,5 +54,7 @@ typedef enum {
 
 typedef enum {
     FlipperECUGuiCustomEventPopupBack,
+    FlipperECUGuiCustomEventExitWarningExit,
+    FlipperECUGuiCustomEventExitWarningStay,
     FlipperECUGuiCustomEventTextEditResult
 } FlipperECUGUICustomEvent;

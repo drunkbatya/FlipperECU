@@ -6,6 +6,7 @@
         worker->qpio_timer_queue                                                                  \
             .queue_oc_##channel[worker->qpio_timer_queue.queue_head_oc_##channel]                 \
             .next_compare_value = UINT32_MAX;                                                     \
+        worker->engine_status->first_queue_event_ticks = comp;                                    \
         LL_TIM_OC_SetCompareCH##channel(GPIO_TIMER, comp);                                        \
     } else {                                                                                      \
         worker->qpio_timer_queue                                                                  \

@@ -5,6 +5,7 @@ typedef struct {
     int16_t ign_angle;
     bool synced;
     double inj_time;
-    double maf_value;
-    double maf_adc;
+    double inj_dead_time;
+    uint32_t sync_processing_time;
+    uint32_t first_queue_event_ticks;
 } FlipperECUEngineStatus;
