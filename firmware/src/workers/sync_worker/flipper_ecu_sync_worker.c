@@ -1,5 +1,6 @@
 #include "flipper_ecu_sync_worker_i.h"
 #include "flipper_ecu_sync_worker_event_queue.h"
+#include "flipper_ecu_sync_worker_speed_density.h"
 
 #include "../../flipper_ecu_resources.h"
 
@@ -70,21 +71,21 @@ static uint32_t degrees_to_ticks(uint32_t period_per_tooth, uint8_t degreese) {
 //    return inj_time;
 //}
 
-static double calc_inj_time_tps_test(FlipperECUSyncWorker* worker) {
-    FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
-    double inj_time = flipper_ecu_map_interpolate_2d(
-                          worker->engine_settings->maps[TPS_TEST_MAP],
-                          flipper_ecu_adc_worker_get_value_tps_full(adc_worker)) /
-                      (double)10;
-    //inj_time = inj_time / 2;
-    if(inj_time < (double)1.0) {
-        inj_time = 1;
-    }
-    if(inj_time > (double)50.0) {
-        inj_time = 50;
-    }
-    return inj_time;
-}
+//static double calc_inj_time_tps_test(FlipperECUSyncWorker* worker) {
+//    FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
+//    double inj_time = flipper_ecu_map_interpolate_2d(
+//                          worker->engine_settings->maps[TPS_TEST_MAP],
+//                          flipper_ecu_adc_worker_get_value_tps_full(adc_worker)) /
+//                      (double)10;
+//    //inj_time = inj_time / 2;
+//    if(inj_time < (double)1.0) {
+//        inj_time = 1;
+//    }
+//    if(inj_time > (double)50.0) {
+//        inj_time = 50;
+//    }
+//    return inj_time;
+//}
 
 // TODO: variable cylynder count and mode
 static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker* worker) {
@@ -99,39 +100,64 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     uint16_t rpm = SystemCoreClock / period_per_tooth;
     worker->engine_status->rpm = rpm;
 
-    if(rpm < worker->engine_settings->cranking_end_rpm) { // cranking
-    } else { // work
-    }
-    worker->engine_status->ign_angle =
-        flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
-
-    // semi-sequental ignition temp
     uint32_t timer_ticks_to_tdc_cylinder_1_4 =
         (period_per_tooth * FIRST_CYLINDER_TDC_TOOTH_FROM_ZERO);
-    uint32_t ign_delay_cylinder_1_4 =
-        timer_ticks_to_tdc_cylinder_1_4 -
-        degrees_to_ticks(period_per_tooth, worker->engine_status->ign_angle);
     uint32_t timer_ticks_to_tdc_cylinder_2_3 =
         (period_per_tooth * SECOND_CYLINDER_TDC_TOOTH_FROM_ZERO);
-    uint32_t ign_delay_cylinder_2_3 =
-        timer_ticks_to_tdc_cylinder_2_3 -
-        degrees_to_ticks(period_per_tooth, worker->engine_status->ign_angle);
-    uint32_t dwell = ms_to_ticks(3);
-
-    // semi-sequental injection temp
     uint32_t inj_delay_cylinder_1_4 = timer_ticks_to_tdc_cylinder_1_4;
     uint32_t inj_delay_cylinder_2_3 = timer_ticks_to_tdc_cylinder_2_3;
-
+    uint32_t dwell = ms_to_ticks(3);
     double inj_dead_time = flipper_ecu_map_interpolate_2d(
-        worker->engine_settings->maps[INJ_DEAD_TIME],
-        (int16_t)flipper_ecu_adc_worker_get_value_vbat(adc_worker));
+                               worker->engine_settings->maps[INJ_DEAD_TIME],
+                               (int16_t)flipper_ecu_adc_worker_get_value_vbat(adc_worker)) /
+                           (double)100;
     uint32_t inj_dwell = ms_to_ticks_double(inj_dead_time);
     worker->engine_status->inj_dead_time = inj_dead_time;
 
-    double inj_time = calc_inj_time_tps_test(worker);
-    worker->engine_status->inj_time = inj_time;
-    inj_time /= (double)2; // semi-sequental squirt
-    uint32_t inj_time_ticks = ms_to_ticks_double(inj_time);
+    uint32_t ign_angle = 0;
+    double inj_time = 0;
+    uint32_t inj_time_ticks = 0;
+
+    double water_temp = flipper_ecu_adc_worker_get_value_water_temp_full(adc_worker);
+    double tps_value = flipper_ecu_adc_worker_get_value_tps_full(adc_worker); // in %
+
+    if((rpm < worker->engine_settings->cranking_end_rpm) &&
+       (worker->engine_status->mode <= EngineModeCranking)) { // cranking
+        worker->engine_status->mode = EngineModeCranking;
+        ign_angle =
+            flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_CRANKING], rpm);
+        inj_time = flipper_ecu_map_interpolate_2d(
+                       worker->engine_settings->maps[INJ_PULSE_WIDTH_CRANKING], water_temp) /
+                   (double)10;
+        worker->engine_status->inj_time = inj_time;
+    } else if(tps_value <= worker->engine_settings->idle_tps_value) { // idle
+        worker->engine_status->mode = EngineModeIdle;
+        ign_angle =
+            flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_IDLE], rpm);
+        inj_time = flipper_ecu_sync_worker_speed_density_get_inj_time(worker);
+        //
+    } else { // work
+        worker->engine_status->mode = EngineModeWorking;
+        ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
+        inj_time = flipper_ecu_sync_worker_speed_density_get_inj_time(worker);
+        if(inj_time < (double)5.0) {
+            inj_time = (double)5.0;
+        }
+        if(inj_time > (double)40.0) {
+            inj_time = (double)40.0;
+        }
+        worker->engine_status->inj_time = inj_time;
+        //inj_time = calc_inj_time_tps_test(worker);
+        inj_time /= (double)2; // semi-sequental squirt
+    }
+
+    worker->engine_status->ign_angle = ign_angle;
+    inj_time_ticks = ms_to_ticks_double(inj_time);
+
+    uint32_t ign_delay_cylinder_1_4 =
+        timer_ticks_to_tdc_cylinder_1_4 - degrees_to_ticks(period_per_tooth, ign_angle);
+    uint32_t ign_delay_cylinder_2_3 =
+        timer_ticks_to_tdc_cylinder_2_3 - degrees_to_ticks(period_per_tooth, ign_angle);
 
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4 - dwell, GPIO_IGNITION_PIN_1, false); // on
     GPIO_QUEUE_ADD(worker, 1, ign_delay_cylinder_1_4, GPIO_IGNITION_PIN_1, true); // off
@@ -203,6 +229,9 @@ static void flipper_ecu_sync_worker_cpks_timer_isr(void* context) {
             worker->current_period = 0;
             worker->previous_period = 0;
             FURI_CRITICAL_EXIT();
+            if(worker->engine_status->mode > EngineModeIgnitionOff) {
+                worker->engine_status->mode = EngineModeStopped;
+            }
             furi_thread_flags_set(
                 furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventEngineStopped);
         }

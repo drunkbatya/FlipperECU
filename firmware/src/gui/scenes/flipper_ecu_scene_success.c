@@ -29,7 +29,7 @@ bool flipper_ecu_scene_success_on_event(void* context, SceneManagerEvent event) 
         success = true;
         if(event.event == FlipperECUGuiCustomEventPopupBack) {
             scene_manager_search_and_switch_to_previous_scene(
-                app->scene_manager, FlipperECUSceneSettings);
+                app->scene_manager, FlipperECUSceneConfig);
         }
     }
     return success;

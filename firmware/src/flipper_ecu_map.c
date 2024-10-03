@@ -207,32 +207,17 @@ void flipper_ecu_map_free(FlipperECUMap* map) {
     free(map);
 }
 
-int16_t flipper_ecu_map_interpolate_2dd(FlipperECUMap* map, int16_t key_x) {
-    int16_t ret = 0;
-    for(uint16_t i = 0; i < map->map_x_size; i++) {
-        if(key_x == map->keys_x[i]) { // exact match
-            ret = map->values[i];
-            break;
-        }
-        if(i == map->map_x_size - 1) { // use latest value if we'r reached end of the map
-            ret = map->values[i];
-            break;
-        }
-        if(i != 0) {
-            if((map->keys_x[i - 1] < key_x) &&
-               (map->keys_x[i] > key_x)) { // if we'r now between two points
-                ret = (map->values[i] + map->values[i - 1]) / 2; // temp
-                break;
-            }
-        } else {
-            if(key_x < map->keys_x[i]) { // lower than minimum key (not value)
-                ret = map->values[i];
-                break;
-            }
-        }
-    }
-    return ret;
+static int16_t interpolate(
+    int16_t key_high,
+    int16_t value_high,
+    int16_t key_low,
+    int16_t value_low,
+    int16_t key) {
+    uint16_t dx = key_high - key_low;
+    int16_t dy = value_high - value_low;
+    return value_low + (key - key_low) * dy / dx;
 }
+
 int16_t flipper_ecu_map_interpolate_2d(const FlipperECUMap* map, int16_t key_x) {
     if(key_x < map->keys_x[0]) {
         return map->values[0];
@@ -247,14 +232,72 @@ int16_t flipper_ecu_map_interpolate_2d(const FlipperECUMap* map, int16_t key_x) 
         }
     }
 
-    /* interpolate */
-    uint16_t dx = map->keys_x[i + 1] - map->keys_x[i];
-    int16_t dy = map->values[i + 1] - map->values[i];
-    return map->values[i] + (key_x - map->keys_x[i]) * dy / dx;
+    return interpolate(
+        map->keys_x[i + 1], map->values[i + 1], map->keys_x[i], map->values[i], key_x);
+}
+
+static int16_t flipper_ecu_map_interpolate_3d_sorry_this_is_temp(
+    const FlipperECUMap* map,
+    int16_t key_x,
+    uint16_t index_z) {
+    if(key_x < map->keys_x[0]) {
+        return map->values[(index_z * map->map_x_size) + (0)];
+    }
+    if(key_x > map->keys_x[map->map_x_size - 1]) {
+        return map->values[(index_z * map->map_x_size) + (map->map_x_size - 1)];
+    }
+    uint16_t i = 0;
+    for(; i < map->map_x_size - 1; i++) {
+        if(map->keys_x[i + 1] > key_x) {
+            break;
+        }
+    }
+
+    return interpolate(
+        map->keys_x[i + 1],
+        map->values[(index_z * map->map_x_size) + i + 1],
+        map->keys_x[i],
+        map->values[(index_z * map->map_x_size) + i],
+        key_x);
+}
+
+int16_t flipper_ecu_map_interpolate_3d(const FlipperECUMap* map, int16_t key_x, int16_t key_z) {
+    int16_t z_index_1 = 0;
+    int16_t z_index_2 = 0;
+    uint16_t index_z = 0;
+    //  finding two z dots
+    if(key_z <= map->keys_z[0]) { // lower than minimum z key, only one z dot to interpolate
+        z_index_1 = 0;
+    }
+    if(key_z >=
+       map->keys_z[map->map_z_size - 1]) { // bigger than maximum z key, only one z dot to interpolate
+        z_index_1 = map->map_z_size - 1;
+    }
+    for(; index_z < map->map_z_size; index_z++) {
+        if(index_z ==
+           map->map_z_size - 1) { // we'r reached last point, only one z dot to interpolate
+            z_index_1 = index_z;
+            break;
+        }
+        if(map->keys_z[index_z + 1] > key_z) {
+            z_index_1 = index_z;
+            z_index_2 = index_z + 1;
+            break;
+        }
+    }
+    if(z_index_2 != 0) {
+        int16_t value_low =
+            flipper_ecu_map_interpolate_3d_sorry_this_is_temp(map, key_x, z_index_1);
+        int16_t value_high =
+            flipper_ecu_map_interpolate_3d_sorry_this_is_temp(map, key_x, z_index_2);
+        return interpolate(
+            map->keys_z[index_z + 1], value_high, map->keys_z[index_z], value_low, key_z);
+    } else {
+        return flipper_ecu_map_interpolate_3d_sorry_this_is_temp(map, key_x, z_index_1);
+    }
 }
 
 FlipperECUMapType flipper_ecu_map_get_map_type(FlipperECUMap* map) {
-    UNUSED(flipper_ecu_map_interpolate_2dd);
     return map->type;
 }
 

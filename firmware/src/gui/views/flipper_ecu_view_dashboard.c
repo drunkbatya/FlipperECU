@@ -34,6 +34,10 @@ static void flipper_ecu_view_dashboard_draw_page0(
     furi_string_printf(fstr, "Inj time: %.3f ms", view_dashboard_model->engine_status->inj_time);
     canvas_draw_str(canvas, 0, 50, furi_string_get_cstr(fstr));
 
+    furi_string_printf(
+        fstr, "Air mass: %.3f g/cycle", view_dashboard_model->engine_status->air_mass);
+    canvas_draw_str(canvas, 0, 60, furi_string_get_cstr(fstr));
+
     furi_string_free(fstr);
 }
 
@@ -94,15 +98,21 @@ static void flipper_ecu_view_dashboard_draw_page2(
 
     furi_string_printf(
         fstr,
+        "Vcc: %.0f mV",
+        flipper_ecu_adc_worker_get_value_v5v(view_dashboard_model->adc_worker));
+    canvas_draw_str(canvas, 0, 20, furi_string_get_cstr(fstr));
+
+    furi_string_printf(
+        fstr,
         "Sync processing ticks: %lu",
         view_dashboard_model->engine_status->sync_processing_time);
-    canvas_draw_str(canvas, 0, 20, furi_string_get_cstr(fstr));
+    canvas_draw_str(canvas, 0, 30, furi_string_get_cstr(fstr));
 
     furi_string_printf(
         fstr,
         "First gpio tick: %lu",
         view_dashboard_model->engine_status->first_queue_event_ticks);
-    canvas_draw_str(canvas, 0, 30, furi_string_get_cstr(fstr));
+    canvas_draw_str(canvas, 0, 40, furi_string_get_cstr(fstr));
 
     double ckps_sync_isr_processing_speed_ratio = 0;
     if(view_dashboard_model->engine_status->first_queue_event_ticks > 0) {
@@ -113,7 +123,46 @@ static void flipper_ecu_view_dashboard_draw_page2(
     }
     furi_string_printf(
         fstr, "Sync ISR speed ratio: %.2f %%", ckps_sync_isr_processing_speed_ratio);
+    canvas_draw_str(canvas, 0, 50, furi_string_get_cstr(fstr));
+
+    furi_string_printf(
+        fstr,
+        "manifold_pressure: %.3f kPa",
+        view_dashboard_model->engine_status->manifold_pressure);
+    canvas_draw_str(canvas, 0, 60, furi_string_get_cstr(fstr));
+
+    furi_string_free(fstr);
+}
+
+static void flipper_ecu_view_dashboard_draw_page3(
+    Canvas* canvas,
+    FlipperECUDashboardViewModel* view_dashboard_model) {
+    FuriString* fstr = furi_string_alloc();
+
+    furi_string_printf(
+        fstr,
+        "Water temp ADC: %.0f mV",
+        flipper_ecu_adc_worker_get_value_water_temp(view_dashboard_model->adc_worker));
+    canvas_draw_str(canvas, 0, 10, furi_string_get_cstr(fstr));
+
+    furi_string_printf(
+        fstr,
+        "Water temp: %.0f C",
+        flipper_ecu_adc_worker_get_value_water_temp_full(view_dashboard_model->adc_worker));
+    canvas_draw_str(canvas, 0, 20, furi_string_get_cstr(fstr));
+
+    furi_string_printf(
+        fstr, "Air charge temp: %.0f C", view_dashboard_model->engine_status->t_charge);
+    canvas_draw_str(canvas, 0, 30, furi_string_get_cstr(fstr));
+
+    furi_string_printf(fstr, "VE: %.4f ", view_dashboard_model->engine_status->ve);
     canvas_draw_str(canvas, 0, 40, furi_string_get_cstr(fstr));
+
+    furi_string_printf(
+        fstr,
+        "Engine mode: %s",
+        flipper_ecu_engine_status_get_mode_name(view_dashboard_model->engine_status));
+    canvas_draw_str(canvas, 0, 50, furi_string_get_cstr(fstr));
 
     furi_string_free(fstr);
 }
@@ -127,6 +176,8 @@ static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _mode
         flipper_ecu_view_dashboard_draw_page1(canvas, view_dashboard_model);
     } else if(view_dashboard_model->page == 2) {
         flipper_ecu_view_dashboard_draw_page2(canvas, view_dashboard_model);
+    } else if(view_dashboard_model->page == 3) {
+        flipper_ecu_view_dashboard_draw_page3(canvas, view_dashboard_model);
     }
 }
 
@@ -140,7 +191,7 @@ static bool flipper_ecu_view_dashboard_input_callback(InputEvent* event, void* _
         {
             if((event->type == InputTypeShort) || (event->type == InputTypeRepeat)) {
                 if(event->key == InputKeyRight) {
-                    if(model->page < 2) {
+                    if(model->page < 3) {
                         model->page++;
                         consumed = true;
                     }

@@ -44,7 +44,14 @@ double flipper_ecu_adc_worker_converter_map(FlipperECUAdcWorker* worker, double 
 double flipper_ecu_adc_worker_converter_air_temp(FlipperECUAdcWorker* worker, double input) {
     const FlipperECUEngineSettings* engine_settings =
         flipper_ecu_app_get_engine_settings(worker->ecu_app);
-    const FlipperECUMap* air_temp_sensor_map = engine_settings->maps[AIR_TEMP_SENSOR];
+    const FlipperECUMap* air_temp_sensor_map = engine_settings->maps[TEMP_SENSOR];
+    return flipper_ecu_map_interpolate_2d(air_temp_sensor_map, (int16_t)input);
+}
+
+double flipper_ecu_adc_worker_converter_water_temp(FlipperECUAdcWorker* worker, double input) {
+    const FlipperECUEngineSettings* engine_settings =
+        flipper_ecu_app_get_engine_settings(worker->ecu_app);
+    const FlipperECUMap* air_temp_sensor_map = engine_settings->maps[TEMP_SENSOR];
     return flipper_ecu_map_interpolate_2d(air_temp_sensor_map, (int16_t)input);
 }
 
@@ -72,12 +79,24 @@ double flipper_ecu_adc_worker_get_value_vbat(FlipperECUAdcWorker* worker) {
     return worker->adc_converted_data[GPIO_ADC_MCU_7_VIN];
 }
 
+double flipper_ecu_adc_worker_get_value_v5v(FlipperECUAdcWorker* worker) {
+    return worker->adc_converted_data[GPIO_ADC_MCU_5_5V];
+}
+
 double flipper_ecu_adc_worker_get_value_air_temp(FlipperECUAdcWorker* worker) {
     return worker->adc_converted_data[GPIO_ADC_MCU_3_AIR_TEMP];
 }
 
 double flipper_ecu_adc_worker_get_value_air_temp_full(FlipperECUAdcWorker* worker) {
     return worker->adc_converted_data_full[GPIO_ADC_MCU_3_AIR_TEMP];
+}
+
+double flipper_ecu_adc_worker_get_value_water_temp(FlipperECUAdcWorker* worker) {
+    return worker->adc_converted_data[GPIO_ADC_MCU_4_WATER_TEMP];
+}
+
+double flipper_ecu_adc_worker_get_value_water_temp_full(FlipperECUAdcWorker* worker) {
+    return worker->adc_converted_data_full[GPIO_ADC_MCU_4_WATER_TEMP];
 }
 
 static void flipper_ecu_adc_worker_dma_callback(void* context) {

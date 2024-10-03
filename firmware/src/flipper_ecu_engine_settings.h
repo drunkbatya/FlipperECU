@@ -9,7 +9,11 @@
 
 typedef enum {
     INJ_DEAD_TIME,
-    AIR_TEMP_SENSOR,
+    TEMP_SENSOR,
+    INJ_PULSE_WIDTH_CRANKING,
+    IGN_ANGLE_CRANKING,
+    IGN_ANGLE_IDLE,
+    VE,
     IGN_MAP,
     TPS_TEST_MAP,
     MAP_COUNT
@@ -17,6 +21,16 @@ typedef enum {
 
 typedef struct {
     FlipperECUMap* maps[MAP_COUNT];
+
+    // engine
+    uint32_t engine_displacement;
+    uint8_t cylinders_count;
+
+    // constants
+    double idle_tps_value;
+
+    // injectors
+    double inj_flow;
 
     // idle valve
     uint16_t idle_valve_total_steps;
