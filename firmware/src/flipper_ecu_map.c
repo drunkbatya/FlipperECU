@@ -12,6 +12,10 @@ struct FlipperECUMap {
     uint16_t map_z_size; // eg: second '16' in '16x16'. In 3D maps.  TODO: name
     int16_t value_min; // editable value min
     int16_t value_max; // editable value max
+    int16_t last_used_key_x1; // to visualize currently used cells, key_x1
+    int16_t last_used_key_x2; // to visualize currently used cells, key_x2
+    int16_t last_used_key_z1; // to visualize currently used cells, key_z1
+    int16_t last_used_key_z2; // to visualize currently used cells, key_z2
     int16_t* values; // editable values. size = map_x_size * map_z_size, ** for 3D maps.
     int16_t* keys_x; // size = map_x_size
     int16_t* keys_z; // size = map_z_size
@@ -58,6 +62,22 @@ int16_t
     furi_check(index_x < map->map_x_size);
     furi_check(index_z < map->map_z_size);
     return map->values[(index_z * map->map_x_size) + index_x];
+}
+
+int16_t flipper_ecu_map_get_last_used_key_x1(FlipperECUMap* map) {
+    return map->last_used_key_x1;
+}
+
+int16_t flipper_ecu_map_get_last_used_key_x2(FlipperECUMap* map) {
+    return map->last_used_key_x2;
+}
+
+int16_t flipper_ecu_map_get_last_used_key_z1_3d(FlipperECUMap* map) {
+    return map->last_used_key_z1;
+}
+
+int16_t flipper_ecu_map_get_last_used_key_z2_3d(FlipperECUMap* map) {
+    return map->last_used_key_z2;
 }
 
 int16_t flipper_ecu_map_get_key_x_by_index(FlipperECUMap* map, uint16_t index_x) {
@@ -237,13 +257,17 @@ int16_t flipper_ecu_map_interpolate_2d(const FlipperECUMap* map, int16_t key_x) 
 }
 
 static int16_t flipper_ecu_map_interpolate_3d_sorry_this_is_temp(
-    const FlipperECUMap* map,
+    FlipperECUMap* map,
     int16_t key_x,
     uint16_t index_z) {
     if(key_x < map->keys_x[0]) {
+        map->last_used_key_x1 = map->keys_x[0];
+        map->last_used_key_x2 = 0;
         return map->values[(index_z * map->map_x_size) + (0)];
     }
     if(key_x > map->keys_x[map->map_x_size - 1]) {
+        map->last_used_key_x1 = map->keys_x[map->map_x_size - 1];
+        map->last_used_key_x2 = 0;
         return map->values[(index_z * map->map_x_size) + (map->map_x_size - 1)];
     }
     uint16_t i = 0;
@@ -253,6 +277,9 @@ static int16_t flipper_ecu_map_interpolate_3d_sorry_this_is_temp(
         }
     }
 
+    map->last_used_key_x1 = map->keys_x[i];
+    map->last_used_key_x2 = map->keys_x[i + 1];
+
     return interpolate(
         map->keys_x[i + 1],
         map->values[(index_z * map->map_x_size) + i + 1],
@@ -261,7 +288,7 @@ static int16_t flipper_ecu_map_interpolate_3d_sorry_this_is_temp(
         key_x);
 }
 
-int16_t flipper_ecu_map_interpolate_3d(const FlipperECUMap* map, int16_t key_x, int16_t key_z) {
+int16_t flipper_ecu_map_interpolate_3d(FlipperECUMap* map, int16_t key_x, int16_t key_z) {
     int16_t z_index_1 = 0;
     int16_t z_index_2 = 0;
     uint16_t index_z = 0;
@@ -290,9 +317,13 @@ int16_t flipper_ecu_map_interpolate_3d(const FlipperECUMap* map, int16_t key_x, 
             flipper_ecu_map_interpolate_3d_sorry_this_is_temp(map, key_x, z_index_1);
         int16_t value_high =
             flipper_ecu_map_interpolate_3d_sorry_this_is_temp(map, key_x, z_index_2);
+        map->last_used_key_z1 = flipper_ecu_map_get_key_z_by_index_3d(map, z_index_1);
+        map->last_used_key_z2 = flipper_ecu_map_get_key_z_by_index_3d(map, z_index_2);
         return interpolate(
             map->keys_z[index_z + 1], value_high, map->keys_z[index_z], value_low, key_z);
     } else {
+        map->last_used_key_z1 = flipper_ecu_map_get_key_z_by_index_3d(map, z_index_1);
+        map->last_used_key_z2 = 0;
         return flipper_ecu_map_interpolate_3d_sorry_this_is_temp(map, key_x, z_index_1);
     }
 }

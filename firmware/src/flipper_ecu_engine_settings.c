@@ -28,7 +28,7 @@ FlipperECUEngineSettings* flipper_ecu_engine_settings_alloc(void) {
     // main VE map
     set->maps[VE] = flipper_ecu_map_create_alloc_3d(16, 16);
     flipper_ecu_map_set_names_3d(set->maps[VE], "VE", "rpm", "air flow", "VE");
-    flipper_ecu_map_set_ranges(set->maps[VE], 0, 2000);
+    flipper_ecu_map_set_ranges(set->maps[VE], 0, 1000);
 
     // Ignition map cranking
     set->maps[IGN_ANGLE_CRANKING] = flipper_ecu_map_create_alloc_2d(16);

@@ -20,10 +20,8 @@ struct FlipperECUMapEditor3DGridView {
 
 typedef struct {
     FlipperECUMap* map;
-    uint32_t prev_dot_x;
-    uint32_t prev_dot_y;
-    uint16_t selected_x_dot;
-    uint16_t selected_z_dot;
+    uint32_t selected_horizontal_i;
+    uint32_t selected_vertical_i;
     bool edit_mode;
 } FlipperECUMapEditor3DGridViewModel;
 
@@ -36,8 +34,6 @@ void flipper_ecu_view_map_editor_3d_grid_load_map(
         {
             model->map = map;
             model->edit_mode = false;
-            model->selected_x_dot = 3;
-            model->selected_z_dot = 0;
         },
         true);
 }
@@ -50,17 +46,77 @@ void flipper_ecu_view_map_editor_3d_grid_reset(
         {
             model->map = NULL;
             model->edit_mode = false;
-            model->selected_x_dot = 0;
-            model->selected_z_dot = 0;
         },
         false);
 }
-
 static void flipper_ecu_view_map_editor_3d_grid_draw_callback(Canvas* canvas, void* _model) {
-    FlipperECUMapEditor3DGridViewModel* map_editor_model = _model;
-    UNUSED(map_editor_model);
+    FlipperECUMapEditor3DGridViewModel* model = _model;
 
-    canvas_draw_str_aligned(canvas, 0, 10, AlignLeft, AlignTop, "Fuck");
+    uint32_t map_size_x = flipper_ecu_map_get_map_x_size(model->map);
+    uint32_t map_size_z = flipper_ecu_map_get_map_z_size_3d(model->map);
+    uint32_t cell_size_horizontal = DISPLAY_WIDTH / map_size_x;
+    uint32_t cell_size_vertical = DISPLAY_HEIGHT / map_size_z;
+    int16_t last_used_key_x1 = flipper_ecu_map_get_last_used_key_x1(model->map);
+    int16_t last_used_key_x2 = flipper_ecu_map_get_last_used_key_x2(model->map);
+    int16_t last_used_key_z1 = flipper_ecu_map_get_last_used_key_z1_3d(model->map);
+    int16_t last_used_key_z2 = flipper_ecu_map_get_last_used_key_z2_3d(model->map);
+
+    canvas_clear(canvas);
+
+    if(!model->edit_mode) {
+        for(uint32_t vertical_i = 0; vertical_i < map_size_z; vertical_i++) { // rows
+            int16_t key_z = flipper_ecu_map_get_key_z_by_index_3d(model->map, vertical_i);
+            for(uint32_t horizontal_i = 0; horizontal_i < map_size_x; horizontal_i++) { // columns
+                int16_t key_x = flipper_ecu_map_get_key_x_by_index(model->map, horizontal_i);
+                bool in_use = false;
+                bool is_cell_selected = false;
+                if(((key_x == last_used_key_x1) || (key_x == last_used_key_x2)) &&
+                   ((key_z == last_used_key_z1) || (key_z == last_used_key_z2))) {
+                    in_use = true;
+                }
+                if((horizontal_i == model->selected_horizontal_i) &&
+                   vertical_i == model->selected_vertical_i) {
+                    is_cell_selected = true;
+                }
+                // draw cell
+                uint8_t temp_ill_remove_it_x = horizontal_i != (map_size_x - 1);
+                uint8_t temp_ill_remove_it_y = vertical_i != (map_size_z - 1);
+                if(in_use || is_cell_selected) {
+                    canvas_draw_box(
+                        canvas,
+                        cell_size_horizontal * horizontal_i,
+                        cell_size_vertical * vertical_i,
+                        cell_size_horizontal + temp_ill_remove_it_x,
+                        cell_size_vertical + temp_ill_remove_it_y);
+                } else {
+                    canvas_draw_frame(
+                        canvas,
+                        cell_size_horizontal * horizontal_i,
+                        cell_size_vertical * vertical_i,
+                        cell_size_horizontal + temp_ill_remove_it_x,
+                        cell_size_vertical + temp_ill_remove_it_y);
+                }
+            }
+        }
+    } else { // edit mode
+        FuriString* fstr = furi_string_alloc();
+        int16_t value = flipper_ecu_map_get_value_by_index_3d(
+            model->map, model->selected_horizontal_i, model->selected_vertical_i);
+        int16_t key_x =
+            flipper_ecu_map_get_key_x_by_index(model->map, model->selected_horizontal_i);
+        int16_t key_z =
+            flipper_ecu_map_get_key_z_by_index_3d(model->map, model->selected_vertical_i);
+        const char* map_x_name = flipper_ecu_map_get_x_name(model->map);
+        const char* map_z_name = flipper_ecu_map_get_z_name_3d(model->map);
+        const char* map_values_name = flipper_ecu_map_get_values_name(model->map);
+        furi_string_printf(fstr, "Current %s: %d", map_x_name, key_x);
+        canvas_draw_str_aligned(canvas, 0, 0, AlignLeft, AlignTop, furi_string_get_cstr(fstr));
+        furi_string_printf(fstr, "Current %s: %d", map_z_name, key_z);
+        canvas_draw_str_aligned(canvas, 0, 10, AlignLeft, AlignTop, furi_string_get_cstr(fstr));
+        furi_string_printf(fstr, "Current %s: %d", map_values_name, value);
+        canvas_draw_str_aligned(canvas, 0, 20, AlignLeft, AlignTop, furi_string_get_cstr(fstr));
+        furi_string_free(fstr);
+    }
 }
 
 static bool flipper_ecu_view_map_editor_3d_grid_input_callback(InputEvent* event, void* context) {
@@ -75,11 +131,82 @@ static bool flipper_ecu_view_map_editor_3d_grid_input_callback(InputEvent* event
                     if(event->key == InputKeyOk) {
                         model->edit_mode = true;
                         consumed = true;
+                    } else if(event->key == InputKeyRight) {
+                        uint32_t map_size_x = flipper_ecu_map_get_map_x_size(model->map);
+                        if(model->selected_horizontal_i < map_size_x - 1) {
+                            model->selected_horizontal_i++;
+                            consumed = true;
+                        }
+                    } else if(event->key == InputKeyLeft) {
+                        if(model->selected_horizontal_i > 0) {
+                            model->selected_horizontal_i--;
+                            consumed = true;
+                        }
+                    } else if(event->key == InputKeyUp) {
+                        if(model->selected_vertical_i > 0) {
+                            model->selected_vertical_i--;
+                            consumed = true;
+                        }
+                    } else if(event->key == InputKeyDown) {
+                        uint32_t map_size_z = flipper_ecu_map_get_map_z_size_3d(model->map);
+                        if(model->selected_vertical_i < map_size_z - 1) {
+                            model->selected_vertical_i++;
+                            consumed = true;
+                        }
+                    }
+                }
+            } else { // edit mode
+                if((event->type == InputTypeShort) || (event->type == InputTypeRepeat)) {
+                    int16_t value = flipper_ecu_map_get_value_by_index_3d(
+                        model->map, model->selected_horizontal_i, model->selected_vertical_i);
+                    int16_t value_max = flipper_ecu_map_get_value_max(model->map);
+                    int16_t value_min = flipper_ecu_map_get_value_min(model->map);
+                    if(event->key == InputKeyBack) {
+                        model->edit_mode = false;
+                        consumed = true;
+                    } else if(event->key == InputKeyUp) {
+                        if(event->type == InputTypeShort) {
+                            if(value < value_max) {
+                                flipper_ecu_map_set_value_by_index_3d(
+                                    model->map,
+                                    model->selected_horizontal_i,
+                                    model->selected_vertical_i,
+                                    value + 1);
+                            }
+                        } else if(event->type == InputTypeRepeat) {
+                            if(value < value_max - 10) {
+                                flipper_ecu_map_set_value_by_index_3d(
+                                    model->map,
+                                    model->selected_horizontal_i,
+                                    model->selected_vertical_i,
+                                    value + 10);
+                            }
+                        }
+                        consumed = true;
+                    } else if(event->key == InputKeyDown) {
+                        if(event->type == InputTypeShort) {
+                            if(value > value_min) {
+                                flipper_ecu_map_set_value_by_index_3d(
+                                    model->map,
+                                    model->selected_horizontal_i,
+                                    model->selected_vertical_i,
+                                    value - 1);
+                            }
+                        } else if(event->type == InputTypeRepeat) {
+                            if(value > value_min + 10) {
+                                flipper_ecu_map_set_value_by_index_3d(
+                                    model->map,
+                                    model->selected_horizontal_i,
+                                    model->selected_vertical_i,
+                                    value - 10);
+                            }
+                        }
+                        consumed = true;
                     }
                 }
             }
         },
-        false);
+        true);
     return consumed;
 }
 
