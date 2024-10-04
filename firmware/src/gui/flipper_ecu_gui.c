@@ -46,6 +46,7 @@ FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
 
     app->view_dashboard = flipper_ecu_view_dashboard_alloc(ecu_app, &ecu_app->engine_status);
     app->view_map_editor = flipper_ecu_view_map_editor_alloc();
+    app->view_map_editor_3d_grid = flipper_ecu_view_map_editor_3d_grid_alloc();
     app->view_sensor_config = flipper_ecu_view_sensor_config_alloc();
     app->view_idle_manual = flipper_ecu_view_idle_manual_alloc(ecu_app);
 
@@ -76,6 +77,10 @@ FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
         flipper_ecu_view_map_editor_get_view(app->view_map_editor));
     view_dispatcher_add_view(
         app->view_dispatcher,
+        FlipperECUGuiViewMapEditor3DGrid,
+        flipper_ecu_view_map_editor_3d_grid_get_view(app->view_map_editor_3d_grid));
+    view_dispatcher_add_view(
+        app->view_dispatcher,
         FlipperECUGuiViewSensorConfig,
         flipper_ecu_view_sensor_config_get_view(app->view_sensor_config));
     view_dispatcher_add_view(
@@ -99,6 +104,7 @@ FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
 
 void flipper_ecu_gui_free(FlipperECUGui* app) {
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewDashboard);
+    view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewMapEditor3DGrid);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewMapEditor);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewSensorConfig);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewIdleManual);
@@ -109,6 +115,7 @@ void flipper_ecu_gui_free(FlipperECUGui* app) {
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewTextInput);
 
     flipper_ecu_view_dashboard_free(app->view_dashboard);
+    flipper_ecu_view_map_editor_3d_grid_free(app->view_map_editor_3d_grid);
     flipper_ecu_view_map_editor_free(app->view_map_editor);
     flipper_ecu_view_sensor_config_free(app->view_sensor_config);
     flipper_ecu_view_idle_manual_free(app->view_idle_manual);

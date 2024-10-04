@@ -89,10 +89,10 @@ bool flipper_ecu_scene_config_on_event(void* context, SceneManagerEvent event) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigIgnition);
             success = true;
         } else if(event.event == FlipperECUSceneConfigSubmenuIndexInjection) {
-            //scene_manager_next_scene(app->scene_manager, FlipperECUSceneMapEditor);
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigInjection);
             success = true;
         } else if(event.event == FlipperECUSceneConfigSubmenuIndexDevices) {
-            //scene_manager_next_scene(app->scene_manager, FlipperECUSceneIgnition);
+            //scene_manager_next_scene(app->scene_manager, FlipperECUSceneMapEditor);
             success = true;
         } else if(event.event == FlipperECUSceneConfigSubmenuIndexSensors) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigSensors);

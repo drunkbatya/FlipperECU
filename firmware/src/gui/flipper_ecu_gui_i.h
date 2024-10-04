@@ -14,6 +14,7 @@
 #include "scenes/config/flipper_ecu_scene.h"
 #include "views/flipper_ecu_view_dashboard.h"
 #include "views/flipper_ecu_view_map_editor.h"
+#include "views/flipper_ecu_view_map_editor_3d_grid.h"
 #include "views/flipper_ecu_view_sensor_config.h"
 #include "views/flipper_ecu_view_idle_manual.h"
 
@@ -36,6 +37,7 @@ struct FlipperECUGui {
     VariableItemList* var_item_list;
     FlipperECUDashboardView* view_dashboard;
     FlipperECUMapEditorView* view_map_editor;
+    FlipperECUMapEditor3DGridView* view_map_editor_3d_grid;
     FlipperECUSensorConfigView* view_sensor_config;
     FlipperECUIdleManualView* view_idle_manual;
 };
@@ -48,6 +50,7 @@ typedef enum {
     FlipperECUGuiViewTextInput,
     FlipperECUGuiViewDashboard,
     FlipperECUGuiViewMapEditor,
+    FlipperECUGuiViewMapEditor3DGrid,
     FlipperECUGuiViewSensorConfig,
     FlipperECUGuiViewIdleManual,
 } FlipperECUGuiView;

@@ -15,7 +15,6 @@ typedef enum {
     IGN_ANGLE_IDLE,
     VE,
     IGN_MAP,
-    TPS_TEST_MAP,
     MAP_COUNT
 } FlipperECUEngineSettingsMaps;
 

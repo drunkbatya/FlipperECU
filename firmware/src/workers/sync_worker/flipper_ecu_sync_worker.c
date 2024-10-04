@@ -135,20 +135,22 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
         ign_angle =
             flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_IDLE], rpm);
         inj_time = flipper_ecu_sync_worker_speed_density_get_inj_time(worker);
+        worker->engine_status->inj_time = inj_time;
+        inj_time /= (double)2; // semi-sequental squirt
         //
     } else { // work
         worker->engine_status->mode = EngineModeWorking;
         ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
         inj_time = flipper_ecu_sync_worker_speed_density_get_inj_time(worker);
-        if(inj_time < (double)5.0) {
-            inj_time = (double)5.0;
-        }
-        if(inj_time > (double)40.0) {
-            inj_time = (double)40.0;
-        }
         worker->engine_status->inj_time = inj_time;
         //inj_time = calc_inj_time_tps_test(worker);
         inj_time /= (double)2; // semi-sequental squirt
+    }
+    if(inj_time < (double)1.0) {
+        inj_time = (double)1.0;
+    }
+    if(inj_time > (double)40.0) {
+        inj_time = (double)40.0;
     }
 
     worker->engine_status->ign_angle = ign_angle;

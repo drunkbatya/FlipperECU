@@ -9,11 +9,6 @@ FlipperECUEngineSettings* flipper_ecu_engine_settings_alloc(void) {
     flipper_ecu_map_set_names_2d(set->maps[IGN_MAP], "Ignition main", "RPM", "Angle");
     flipper_ecu_map_set_ranges(set->maps[IGN_MAP], -15, 55);
 
-    // TPS test map
-    set->maps[TPS_TEST_MAP] = flipper_ecu_map_create_alloc_2d(16);
-    flipper_ecu_map_set_names_2d(set->maps[TPS_TEST_MAP], "Inj time", "TPS %", "ms*10");
-    flipper_ecu_map_set_ranges(set->maps[TPS_TEST_MAP], 0, 300);
-
     // injectors dead time
     set->maps[INJ_DEAD_TIME] = flipper_ecu_map_create_alloc_2d(32);
     flipper_ecu_map_set_names_2d(set->maps[INJ_DEAD_TIME], "Inj dead time", "Vbat V", "ms*100");
@@ -53,7 +48,6 @@ void flipper_ecu_engine_settings_free(FlipperECUEngineSettings* set) {
     flipper_ecu_map_free(set->maps[INJ_DEAD_TIME]);
     flipper_ecu_map_free(set->maps[TEMP_SENSOR]);
     flipper_ecu_map_free(set->maps[IGN_MAP]);
-    flipper_ecu_map_free(set->maps[TPS_TEST_MAP]);
     flipper_ecu_map_free(set->maps[INJ_PULSE_WIDTH_CRANKING]);
     flipper_ecu_map_free(set->maps[VE]);
     flipper_ecu_map_free(set->maps[IGN_ANGLE_CRANKING]);
@@ -70,13 +64,6 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
         600, 720, 840, 990, 1170, 1380, 1650, 1950, 2310, 2730, 3210, 3840, 4530, 5370, 6360, 7500};
     flipper_ecu_map_set_keys_x(set->maps[IGN_MAP], test_keys);
     flipper_ecu_map_set_values_2d(set->maps[IGN_MAP], test_data);
-
-    // tps test map
-    const int16_t tps_test_keys[16] = {0, 2, 4, 6, 8, 10, 14, 18, 23, 29, 37, 46, 56, 66, 80, 100};
-    const int16_t tps_test_values[16] = {
-        55, 67, 73, 88, 66, 70, 71, 74, 76, 77, 78, 78, 72, 70, 66, 55};
-    flipper_ecu_map_set_keys_x(set->maps[TPS_TEST_MAP], tps_test_keys);
-    flipper_ecu_map_set_values_2d(set->maps[TPS_TEST_MAP], tps_test_values);
 
     // inj dead time
     const int16_t inj_dead_time_values[32] = {580, 450, 380, 330, 300, 275, 250, 230,
