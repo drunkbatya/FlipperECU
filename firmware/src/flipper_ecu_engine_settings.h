@@ -16,6 +16,7 @@ typedef enum {
     VE,
     INJ_AFTERSTART_ENRICHMENT,
     INJ_WARMUP_ENRICHMENT,
+    IDLE_RPM,
     IGN_MAP,
     MAP_COUNT
 } FlipperECUEngineSettingsMaps;
@@ -37,6 +38,7 @@ typedef struct {
     // idle valve
     uint16_t idle_valve_total_steps;
     uint16_t idle_valve_pwm_freq;
+    bool idle_closed_loop;
 
     // cranking
     uint16_t idle_valve_position_on_ignition_on;

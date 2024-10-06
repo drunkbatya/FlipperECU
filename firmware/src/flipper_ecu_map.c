@@ -340,3 +340,18 @@ bool flipper_ecu_map_save(FlipperECUMap* map, File* file) {
     const uint32_t size = flipper_ecu_map_get_data_mem_size(map);
     return (storage_file_write(file, flipper_ecu_map_get_map_data_mem(map), size) == size);
 }
+
+void flipper_ecu_map_print_to_logs_3d(FlipperECUMap* map) {
+    FuriString* fstr = furi_string_alloc();
+    furi_string_printf(fstr, "Map name: '%s'\r\n", map->name);
+    furi_string_cat_printf(fstr, "Map data:\r\n");
+    for(uint32_t vertical_i = 0; vertical_i < map->map_z_size; vertical_i++) { // rows
+        for(uint32_t horizontal_i = 0; horizontal_i < map->map_x_size; horizontal_i++) { // columns
+            furi_string_cat_printf(
+                fstr, "%d,", map->values[(vertical_i * map->map_x_size) + horizontal_i]);
+        }
+        furi_string_cat_printf(fstr, "\r\n");
+    }
+    FURI_LOG_I("Map dump", furi_string_get_cstr(fstr));
+    furi_string_free(fstr);
+}

@@ -173,6 +173,32 @@ static void flipper_ecu_view_dashboard_draw_page3(
     furi_string_free(fstr);
 }
 
+static void flipper_ecu_view_dashboard_draw_page4(
+    Canvas* canvas,
+    FlipperECUDashboardViewModel* view_dashboard_model) {
+    FuriString* fstr = furi_string_alloc();
+
+    furi_string_printf(
+        fstr,
+        "Fuel pump: %s",
+        view_dashboard_model->engine_status->fuel_pump_is_on == true ? "on" : "off");
+    canvas_draw_str(canvas, 0, 10, furi_string_get_cstr(fstr));
+
+    furi_string_printf(
+        fstr,
+        "Warmup enrich mul: %f",
+        view_dashboard_model->engine_status->warmup_enrichment_multiplyer);
+    canvas_draw_str(canvas, 0, 20, furi_string_get_cstr(fstr));
+
+    furi_string_printf(
+        fstr,
+        "Afterstart enrich mul: %f",
+        view_dashboard_model->engine_status->afterstart_enrichment_multiplyer);
+    canvas_draw_str(canvas, 0, 30, furi_string_get_cstr(fstr));
+
+    furi_string_free(fstr);
+}
+
 static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _model) {
     FlipperECUDashboardViewModel* view_dashboard_model = _model;
     canvas_clear(canvas);
@@ -184,6 +210,8 @@ static void flipper_ecu_view_dashboard_draw_callback(Canvas* canvas, void* _mode
         flipper_ecu_view_dashboard_draw_page2(canvas, view_dashboard_model);
     } else if(view_dashboard_model->page == 3) {
         flipper_ecu_view_dashboard_draw_page3(canvas, view_dashboard_model);
+    } else if(view_dashboard_model->page == 4) {
+        flipper_ecu_view_dashboard_draw_page4(canvas, view_dashboard_model);
     }
 }
 
@@ -197,7 +225,7 @@ static bool flipper_ecu_view_dashboard_input_callback(InputEvent* event, void* _
         {
             if((event->type == InputTypeShort) || (event->type == InputTypeRepeat)) {
                 if(event->key == InputKeyRight) {
-                    if(model->page < 3) {
+                    if(model->page < 4) {
                         model->page++;
                         consumed = true;
                     }

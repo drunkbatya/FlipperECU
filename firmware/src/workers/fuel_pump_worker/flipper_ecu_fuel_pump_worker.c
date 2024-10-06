@@ -5,6 +5,16 @@
 
 #define TAG "FlipperECUFuelPumpWorker"
 
+static void flipper_ecu_fuel_pump_worker_switch_on(FlipperECUFuelPumpWorker* worker) {
+    furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_ON_LEVEL);
+    worker->engine_status->fuel_pump_is_on = true;
+}
+
+static void flipper_ecu_fuel_pump_worker_switch_off(FlipperECUFuelPumpWorker* worker) {
+    furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_OFF_LEVEL);
+    worker->engine_status->fuel_pump_is_on = false;
+}
+
 static int32_t flipper_ecu_fuel_pump_worker_thread(void* arg) {
     FlipperECUFuelPumpWorker* worker = arg;
     uint32_t events;
@@ -16,17 +26,17 @@ static int32_t flipper_ecu_fuel_pump_worker_thread(void* arg) {
             break;
         }
         if(events & FlipperECUFuelPumpWorkerEventIgnitionSwitchedOn) {
-            furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_ON_LEVEL);
+            flipper_ecu_fuel_pump_worker_switch_on(worker);
             furi_delay_ms(FUEL_PUMP_POWER_OFF_TIMEOUT_MS);
             if(worker->engine_status->mode < EngineModeCranking) {
-                furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_OFF_LEVEL);
+                flipper_ecu_fuel_pump_worker_switch_off(worker);
             }
         }
         if(events & FlipperECUFuelPumpWorkerEventEngineRunning) {
-            furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_ON_LEVEL);
+            flipper_ecu_fuel_pump_worker_switch_on(worker);
         }
         if(events & FlipperECUFuelPumpWorkerEventEngineStopped) {
-            //furi_hal_gpio_write(gpio_mcu_fuel_pump_out, FUEL_PUMP_OFF_LEVEL);
+            flipper_ecu_fuel_pump_worker_switch_off(worker);
         }
         furi_delay_tick(10);
     }

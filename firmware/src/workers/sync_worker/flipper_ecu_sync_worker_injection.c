@@ -17,7 +17,8 @@ double flipper_ecu_sync_worker_injection_get_afterstart_enrichment_multiplyer(
         worker->afterstart_enrichment_counter--;
     }
     worker->engine_status->afterstart_enrichment_counter = worker->afterstart_enrichment_counter;
-    return (double)1.0 + enrichment_multiplyer;
+    worker->engine_status->afterstart_enrichment_multiplyer = (double)1.0 + enrichment_multiplyer;
+    return worker->engine_status->afterstart_enrichment_multiplyer;
 }
 
 double flipper_ecu_sync_worker_injection_get_warmup_enrichment_multiplyer(
@@ -28,5 +29,6 @@ double flipper_ecu_sync_worker_injection_get_warmup_enrichment_multiplyer(
         flipper_ecu_map_interpolate_2d(
             worker->engine_settings->maps[INJ_WARMUP_ENRICHMENT], water_temp) /
         (double)1000;
-    return (double)1.0 + warmup_multiplyer;
+    worker->engine_status->warmup_enrichment_multiplyer = (double)1.0 + warmup_multiplyer;
+    return worker->engine_status->warmup_enrichment_multiplyer;
 }

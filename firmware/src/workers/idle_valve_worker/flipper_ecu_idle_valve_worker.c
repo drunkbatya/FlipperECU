@@ -46,6 +46,7 @@ static void flipper_ecu_idle_valve_worker_stop_timer_isr(void* context) {
                 LL_LPTIM_StartCounter(
                     LPTIM2, LL_LPTIM_OPERATING_MODE_ONESHOT); // disabling continuous mode
                 worker->calibration_done = true;
+                worker->movement_done = true; // TODO separate
             }
         }
     }
@@ -53,13 +54,12 @@ static void flipper_ecu_idle_valve_worker_stop_timer_isr(void* context) {
 
 static int32_t flipper_ecu_idle_valve_worker_thread(void* arg) {
     FlipperECUIdleValveWorker* worker = arg;
-    UNUSED(worker);
     FuriString* fstr = furi_string_alloc();
+    FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
     uint32_t events;
     FURI_LOG_I(TAG, "thread started");
     while(1) {
-        events = furi_thread_flags_wait(
-            FlipperECUIdleValveWorkerEventAll, FuriFlagWaitAny, FuriWaitForever);
+        events = furi_thread_flags_get();
         if(events & FlipperECUIdleValveWorkerEventStop) {
             break;
         }
@@ -68,7 +68,19 @@ static int32_t flipper_ecu_idle_valve_worker_thread(void* arg) {
             flipper_ecu_idle_valve_worker_move_to(
                 worker, worker->engine_settings->idle_valve_position_on_ignition_on);
         }
-        furi_delay_tick(10);
+        if((worker->engine_settings->idle_closed_loop == true) &&
+           (worker->engine_status->mode == EngineModeIdle)) {
+            const uint16_t allowed_diff_rpm = 40;
+            double water_temp = flipper_ecu_adc_worker_get_value_water_temp_full(adc_worker);
+            int16_t target_rpm = flipper_ecu_map_interpolate_2d(
+                worker->engine_settings->maps[IDLE_RPM], water_temp);
+            if(worker->engine_status->rpm < (target_rpm - allowed_diff_rpm)) {
+                flipper_ecu_idle_valve_worker_step(worker, IdleValveDirectionForward);
+            } else if(worker->engine_status->rpm > (target_rpm + allowed_diff_rpm)) {
+                flipper_ecu_idle_valve_worker_step(worker, IdleValveDirectionBackward);
+            }
+        }
+        furi_delay_tick(5);
     }
     furi_string_free(fstr);
     FURI_LOG_I(TAG, "thread stopped");
@@ -185,11 +197,15 @@ static void flipper_ecu_idle_valve_worker_stop_timer_deinit(FlipperECUIdleValveW
     furi_hal_interrupt_set_isr(FuriHalInterruptIdTim1UpTim16, NULL, NULL);
 }
 
-FlipperECUIdleValveWorker*
-    flipper_ecu_idle_valve_worker_alloc(FlipperECUEngineSettings* engine_settings) {
+FlipperECUIdleValveWorker* flipper_ecu_idle_valve_worker_alloc(
+    FlipperECUApp* ecu_app,
+    FlipperECUEngineSettings* engine_settings,
+    FlipperECUEngineStatus* engine_status) {
     FlipperECUIdleValveWorker* worker = malloc(sizeof(FlipperECUIdleValveWorker));
     worker->thread = furi_thread_alloc_ex(TAG, 1024, flipper_ecu_idle_valve_worker_thread, worker);
+    worker->ecu_app = ecu_app;
     worker->engine_settings = engine_settings;
+    worker->engine_status = engine_status;
     flipper_ecu_idle_valve_worker_gpio_dir_init(worker);
     flipper_ecu_idle_valve_worker_gpio_step_init(worker);
     flipper_ecu_idle_valve_worker_pwm_timer_init(worker);
@@ -262,6 +278,7 @@ void flipper_ecu_idle_valve_worker_calibrate(FlipperECUIdleValveWorker* worker) 
 
 void flipper_ecu_idle_valve_worker_move_to(FlipperECUIdleValveWorker* worker, uint16_t position) {
     uint16_t steps = 0;
+    worker->movement_done = false;
     if(position > worker->current_position) {
         steps = position - worker->current_position;
         furi_hal_gpio_write(gpio_mcu_idle_direction, 1); // going forward
@@ -281,6 +298,7 @@ void flipper_ecu_idle_valve_worker_move_to(FlipperECUIdleValveWorker* worker, ui
     worker->stop_timer_current_overflow_count = 0;
     LL_LPTIM_StartCounter(LPTIM2, LL_LPTIM_OPERATING_MODE_CONTINUOUS);
     LL_TIM_EnableCounter(TIM1);
+    while(!worker->movement_done) furi_delay_tick(1);
     worker->current_position = position;
 }
 

@@ -36,6 +36,7 @@ void flipper_ecu_view_map_editor_3d_grid_load_map(
             model->edit_mode = false;
         },
         true);
+    flipper_ecu_map_print_to_logs_3d(map);
 }
 
 void flipper_ecu_view_map_editor_3d_grid_reset(

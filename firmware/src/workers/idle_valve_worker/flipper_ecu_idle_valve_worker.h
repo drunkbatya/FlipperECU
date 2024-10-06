@@ -4,12 +4,16 @@
 
 typedef struct FlipperECUIdleValveWorker FlipperECUIdleValveWorker;
 
+#include "../../flipper_ecu_app.h"
 #include "../../flipper_ecu_engine_settings.h"
+#include "../../flipper_ecu_engine_status.h"
 
 typedef enum { IdleValveDirectionForward, IdleValveDirectionBackward } IdleValveDirection;
 
-FlipperECUIdleValveWorker*
-    flipper_ecu_idle_valve_worker_alloc(FlipperECUEngineSettings* engine_settings);
+FlipperECUIdleValveWorker* flipper_ecu_idle_valve_worker_alloc(
+    FlipperECUApp* ecu_app,
+    FlipperECUEngineSettings* engine_settings,
+    FlipperECUEngineStatus* engine_status);
 void flipper_ecu_idle_valve_worker_start(FlipperECUIdleValveWorker* worker);
 void flipper_ecu_idle_valve_worker_free(FlipperECUIdleValveWorker* worker);
 void flipper_ecu_idle_valve_worker_send_stop(FlipperECUIdleValveWorker* worker);

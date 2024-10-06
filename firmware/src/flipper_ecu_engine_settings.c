@@ -53,6 +53,11 @@ FlipperECUEngineSettings* flipper_ecu_engine_settings_alloc(void) {
         set->maps[INJ_WARMUP_ENRICHMENT], "Inj warmup enrichment", "temp C", "%");
     flipper_ecu_map_set_ranges(set->maps[INJ_WARMUP_ENRICHMENT], 0, 1800);
 
+    // idle rpm
+    set->maps[IDLE_RPM] = flipper_ecu_map_create_alloc_2d(16);
+    flipper_ecu_map_set_names_2d(set->maps[IDLE_RPM], "Idle RPM", "temp C", "rpm");
+    flipper_ecu_map_set_ranges(set->maps[IDLE_RPM], 0, 2400);
+
     return set;
 }
 
@@ -66,6 +71,7 @@ void flipper_ecu_engine_settings_free(FlipperECUEngineSettings* set) {
     flipper_ecu_map_free(set->maps[IGN_ANGLE_IDLE]);
     flipper_ecu_map_free(set->maps[INJ_AFTERSTART_ENRICHMENT]);
     flipper_ecu_map_free(set->maps[INJ_WARMUP_ENRICHMENT]);
+    flipper_ecu_map_free(set->maps[IDLE_RPM]);
     free(set);
 }
 
@@ -116,20 +122,20 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
     const int16_t ve_values[16 * 16] = {
         207, 200, 193, 186, 180, 173, 166, 159, 152, 145, 138, 132, 125, 118, 111, 104, // aa
         212, 205, 198, 192, 185, 178, 171, 165, 158, 151, 144, 138, 131, 124, 117, 111, // aa
-        217, 210, 203, 197, 190, 183, 177, 170, 163, 157, 150, 143, 137, 130, 124, 117, // aa
-        222, 215, 208, 202, 195, 189, 182, 176, 169, 163, 156, 149, 143, 136, 130, 123, // aa
-        226, 220, 214, 207, 201, 194, 188, 181, 175, 168, 162, 155, 149, 143, 136, 130, // aa
-        231, 225, 219, 212, 206, 200, 193, 187, 180, 174, 168, 161, 155, 149, 142, 136, // aa
-        236, 230, 224, 217, 211, 205, 199, 192, 186, 180, 174, 167, 161, 155, 149, 142, // aa
-        241, 235, 229, 223, 217, 210, 204, 198, 192, 186, 180, 173, 167, 161, 155, 149, // aa
-        246, 240, 234, 228, 222, 216, 210, 204, 198, 191, 185, 179, 173, 167, 161, 155, // aa
-        251, 245, 239, 233, 227, 221, 215, 209, 203, 197, 191, 185, 179, 173, 167, 161, // aa
-        256, 250, 244, 238, 232, 226, 221, 215, 209, 203, 197, 191, 185, 180, 174, 168, // aa
-        261, 255, 249, 243, 238, 232, 226, 220, 215, 209, 203, 197, 191, 186, 180, 174, // aa
+        217, 210, 203, 165, 165, 183, 177, 170, 163, 157, 150, 143, 137, 130, 124, 117, // aa
+        146, 168, 163, 164, 159, 162, 178, 176, 169, 163, 156, 149, 143, 136, 130, 123, // aa
+        149, 165, 168, 166, 185, 172, 188, 181, 175, 168, 162, 155, 149, 143, 136, 130, // aa
+        151, 146, 214, 197, 206, 186, 190, 184, 180, 174, 168, 161, 155, 149, 142, 136, // aa
+        184, 166, 190, 197, 211, 205, 198, 192, 186, 180, 174, 167, 161, 155, 149, 142, // aa
+        201, 189, 177, 211, 217, 210, 184, 196, 192, 186, 180, 173, 167, 161, 155, 149, // aa
+        246, 219, 204, 228, 222, 216, 210, 204, 198, 191, 185, 179, 173, 167, 161, 155, // aa
+        239, 235, 239, 233, 227, 221, 215, 209, 220, 197, 191, 185, 179, 173, 167, 161, // aa
+        236, 250, 244, 238, 226, 226, 216, 234, 218, 211, 197, 191, 185, 180, 174, 168, // aa
+        261, 255, 249, 243, 238, 232, 226, 220, 222, 213, 203, 197, 191, 186, 180, 174, // aa
         266, 260, 254, 249, 243, 237, 232, 226, 220, 215, 209, 203, 198, 192, 186, 180, // aa
         271, 265, 259, 254, 248, 243, 237, 231, 226, 220, 215, 209, 204, 198, 192, 187, // aa
         275, 270, 264, 259, 253, 248, 243, 237, 232, 226, 221, 215, 210, 204, 199, 193, // aa
-        280, 275, 270, 264, 259, 253, 248, 243, 237, 232, 226, 221, 216, 210, 205, 200, // aa
+        280, 275, 270, 264, 259, 253, 248, 243, 237, 232, 226, 221, 216, 210, 205, 200 // aa
     };
     const int16_t ve_keys_x[16] = {
         600, 720, 840, 990, 1170, 1380, 1650, 1950, 2310, 2730, 3210, 3840, 4530, 5370, 6360, 7500};
@@ -167,11 +173,19 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
 
     // injection warmup enrichment
     const int16_t inj_warmup_enrichment_values[16] = {
-        534, 483, 423, 359, 282, 227, 188, 119, 78, 47, 23, 0, 0, 0, 0, 0};
+        534, 483, 423, 359, 282, 200, 180, 110, 50, 0, 0, 0, 0, 0, 0, 0};
     const int16_t inj_warmup_enrichment_keys[16] = {
         -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120};
     flipper_ecu_map_set_keys_x(set->maps[INJ_WARMUP_ENRICHMENT], inj_warmup_enrichment_keys);
     flipper_ecu_map_set_values_2d(set->maps[INJ_WARMUP_ENRICHMENT], inj_warmup_enrichment_values);
+
+    // idle rpm
+    const int16_t idle_rpm_values[16] = {
+        1600, 1570, 1550, 1500, 1350, 1300, 1190, 1070, 990, 800, 800, 800, 800, 800, 800, 804};
+    const int16_t idle_rpm_keys[16] = {
+        -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120};
+    flipper_ecu_map_set_keys_x(set->maps[IDLE_RPM], idle_rpm_keys);
+    flipper_ecu_map_set_values_2d(set->maps[IDLE_RPM], idle_rpm_values);
 
     // maps end
 
@@ -182,10 +196,11 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
 
     set->idle_valve_pwm_freq = 500;
     set->idle_valve_total_steps = 255;
+    set->idle_closed_loop = true;
 
     set->idle_tps_value = 0; // %
 
-    set->idle_valve_position_on_ignition_on = 70;
+    set->idle_valve_position_on_ignition_on = 150;
 
     set->cranking_end_rpm = 500;
 

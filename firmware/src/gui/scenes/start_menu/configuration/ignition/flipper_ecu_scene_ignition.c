@@ -47,8 +47,10 @@ bool flipper_ecu_scene_config_ignition_on_event(void* context, SceneManagerEvent
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigIgnitionCranking);
             success = true;
         } else if(event.event == FlipperECUSceneConfigIgnitionSubmenuIndexIdle) {
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigIgnitionIdle);
             success = true;
         } else if(event.event == FlipperECUSceneConfigIgnitionSubmenuIndexWork) {
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigIgnitionWork);
             success = true;
         }
     }

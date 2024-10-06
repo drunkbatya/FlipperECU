@@ -3,6 +3,7 @@
 typedef enum {
     FlipperECUSceneConfigSubmenuIndexIgnition,
     FlipperECUSceneConfigSubmenuIndexInjection,
+    FlipperECUSceneConfigSubmenuIndexIdling,
     FlipperECUSceneConfigSubmenuIndexDevices,
     FlipperECUSceneConfigSubmenuIndexSensors,
     FlipperECUSceneConfigSubmenuIndexEngineConstants,
@@ -42,6 +43,12 @@ void flipper_ecu_scene_config_on_enter(void* context) {
         app->submenu,
         "Injection",
         FlipperECUSceneConfigSubmenuIndexInjection,
+        flipper_ecu_scene_config_submenu_callback,
+        app);
+    submenu_add_item(
+        app->submenu,
+        "Idling",
+        FlipperECUSceneConfigSubmenuIndexIdling,
         flipper_ecu_scene_config_submenu_callback,
         app);
     submenu_add_item(
@@ -90,6 +97,9 @@ bool flipper_ecu_scene_config_on_event(void* context, SceneManagerEvent event) {
             success = true;
         } else if(event.event == FlipperECUSceneConfigSubmenuIndexInjection) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigInjection);
+            success = true;
+        } else if(event.event == FlipperECUSceneConfigSubmenuIndexIdling) {
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigIdling);
             success = true;
         } else if(event.event == FlipperECUSceneConfigSubmenuIndexDevices) {
             //scene_manager_next_scene(app->scene_manager, FlipperECUSceneMapEditor);

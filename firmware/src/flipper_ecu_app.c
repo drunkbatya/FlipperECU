@@ -12,7 +12,8 @@ static FlipperECUApp* flipper_ecu_app_alloc(void) {
         flipper_ecu_sync_worker_alloc(app, &app->engine_status, app->engine_settings);
     app->adc_worker = flipper_ecu_adc_worker_alloc(app);
     app->fuel_pump_worker = flipper_ecu_fuel_pump_worker_alloc(&app->engine_status);
-    app->idle_valve_worker = flipper_ecu_idle_valve_worker_alloc(app->engine_settings);
+    app->idle_valve_worker =
+        flipper_ecu_idle_valve_worker_alloc(app, app->engine_settings, &app->engine_status);
 
     app->gui = flipper_ecu_gui_alloc(app);
     return app;

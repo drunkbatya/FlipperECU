@@ -92,7 +92,9 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     // we r captured sync period if we r here, to get actual period we need to divide sync period by missed teeth count
     FlipperECUAdcWorker* adc_worker = flipper_ecu_app_get_adc_worker(worker->ecu_app);
     uint32_t period_per_tooth = worker->previous_period;
-    if(!worker->engine_status->synced) { // if engine is running again after stop
+    if((worker->engine_status->mode <= EngineModeCranking) ||
+       (worker->engine_status->fuel_pump_is_on ==
+        false)) { // if engine is running again after stop
         furi_thread_flags_set(
             furi_thread_get_id(worker->thread), FlipperECUSyncWorkerEventEngineRunningAgain);
     }
@@ -124,13 +126,13 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     if((rpm < worker->engine_settings->cranking_end_rpm) &&
        (worker->engine_status->mode <= EngineModeCranking)) { // cranking
         worker->engine_status->mode = EngineModeCranking;
-        //ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
-        ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
+        ign_angle =
+            flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_CRANKING], rpm);
         inj_time = flipper_ecu_map_interpolate_2d(
                        worker->engine_settings->maps[INJ_PULSE_WIDTH_CRANKING], water_temp) /
                    (double)10;
         worker->engine_status->inj_time = inj_time;
-        inj_time /= (double)2; // semi-sequental squirt
+        //inj_time /= (double)2; // semi-sequental squirt
     } else if(tps_value <= worker->engine_settings->idle_tps_value) { // idle
         if((worker->engine_status->mode == EngineModeCranking) &&
            worker->afterstart_enrichment_counter == 0) {
@@ -138,11 +140,10 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
                 worker->engine_settings->afterstart_enrichment_rotations;
         }
         worker->engine_status->mode = EngineModeIdle;
-        ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
-        //ign_angle =
-        //    flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_IDLE], rpm);
+        ign_angle =
+            flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_IDLE], rpm);
         inj_time = flipper_ecu_sync_worker_speed_density_get_inj_time(worker);
-        //inj_time *= flipper_ecu_sync_worker_injection_get_afterstart_enrichment_multiplyer(worker);
+        inj_time *= flipper_ecu_sync_worker_injection_get_afterstart_enrichment_multiplyer(worker);
         inj_time *= flipper_ecu_sync_worker_injection_get_warmup_enrichment_multiplyer(worker);
         worker->engine_status->inj_time = inj_time;
         inj_time /= (double)2; // semi-sequental squirt
@@ -156,10 +157,9 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
         worker->engine_status->mode = EngineModeWorking;
         ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
         inj_time = flipper_ecu_sync_worker_speed_density_get_inj_time(worker);
-        //inj_time *= flipper_ecu_sync_worker_injection_get_afterstart_enrichment_multiplyer(worker);
+        inj_time *= flipper_ecu_sync_worker_injection_get_afterstart_enrichment_multiplyer(worker);
         inj_time *= flipper_ecu_sync_worker_injection_get_warmup_enrichment_multiplyer(worker);
         worker->engine_status->inj_time = inj_time;
-        //inj_time = calc_inj_time_tps_test(worker);
         inj_time /= (double)2; // semi-sequental squirt
     }
     if(inj_time < (double)1.0) {
@@ -272,7 +272,8 @@ static void flipper_ecu_sync_worker_gpio_timer_isr(void* context) {
                 furi_hal_gpio_write(gpio_mcu_inj_3, event->pin_state);
             }
             furi_hal_gpio_write(event->gpio_pin, event->pin_state);
-            if(event->next_compare_value != 0) {
+            if(event->next_compare_value !=
+               0) { // TODO add comparsion with the current to prevent loosing events
                 LL_TIM_OC_SetCompareCH1(GPIO_TIMER, event->next_compare_value);
             }
         }

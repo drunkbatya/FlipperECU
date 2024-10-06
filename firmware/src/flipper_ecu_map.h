@@ -57,3 +57,4 @@ int16_t flipper_ecu_map_get_last_used_key_x1(FlipperECUMap* map);
 int16_t flipper_ecu_map_get_last_used_key_x2(FlipperECUMap* map);
 int16_t flipper_ecu_map_get_last_used_key_z1_3d(FlipperECUMap* map);
 int16_t flipper_ecu_map_get_last_used_key_z2_3d(FlipperECUMap* map);
+void flipper_ecu_map_print_to_logs_3d(FlipperECUMap* map);

@@ -2,6 +2,8 @@
 
 typedef enum {
     FlipperECUSceneConfigInjectionSubmenuIndexVE,
+    FlipperECUSceneConfigInjectionSubmenuIndexAfterstartEnr,
+    FlipperECUSceneConfigInjectionSubmenuIndexWarmupEnr
 } FlipperECUSceneConfigInjectionSubmenuIndex;
 
 static void flipper_ecu_scene_config_injection_submenu_callback(void* context, uint32_t index) {
@@ -15,6 +17,18 @@ void flipper_ecu_scene_config_injection_on_enter(void* context) {
         app->submenu,
         "Volumetric Efficiency",
         FlipperECUSceneConfigInjectionSubmenuIndexVE,
+        flipper_ecu_scene_config_injection_submenu_callback,
+        app);
+    submenu_add_item(
+        app->submenu,
+        "Afterstart Enrichment",
+        FlipperECUSceneConfigInjectionSubmenuIndexAfterstartEnr,
+        flipper_ecu_scene_config_injection_submenu_callback,
+        app);
+    submenu_add_item(
+        app->submenu,
+        "Warmup Enrichment",
+        FlipperECUSceneConfigInjectionSubmenuIndexWarmupEnr,
         flipper_ecu_scene_config_injection_submenu_callback,
         app);
     submenu_set_selected_item(
@@ -31,6 +45,13 @@ bool flipper_ecu_scene_config_injection_on_event(void* context, SceneManagerEven
             app->scene_manager, FlipperECUSceneConfigInjection, event.event);
         if(event.event == FlipperECUSceneConfigInjectionSubmenuIndexVE) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigInjectionVE);
+            success = true;
+        } else if(event.event == FlipperECUSceneConfigInjectionSubmenuIndexAfterstartEnr) {
+            scene_manager_next_scene(
+                app->scene_manager, FlipperECUSceneConfigInjectionAfterstartEnr);
+            success = true;
+        } else if(event.event == FlipperECUSceneConfigInjectionSubmenuIndexWarmupEnr) {
+            scene_manager_next_scene(app->scene_manager, FlipperECUSceneConfigInjectionWarmupEnr);
             success = true;
         }
     }
