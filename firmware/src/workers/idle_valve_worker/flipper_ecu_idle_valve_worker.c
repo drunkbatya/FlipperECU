@@ -67,8 +67,9 @@ static int32_t flipper_ecu_idle_valve_worker_thread(void* arg) {
             flipper_ecu_idle_valve_worker_calibrate(worker);
             flipper_ecu_idle_valve_worker_move_to(
                 worker, worker->engine_settings->idle_valve_position_on_ignition_on);
+            furi_thread_flags_clear(FlipperECUIdleValveWorkerEventIgnitionSwitchedOn);
         }
-        if((worker->engine_settings->idle_closed_loop == true) &&
+        if((worker->engine_settings->idle_closed_loop == false) &&
            (worker->engine_status->mode == EngineModeIdle)) {
             const uint16_t allowed_diff_rpm = 40;
             double water_temp = flipper_ecu_adc_worker_get_value_water_temp_full(adc_worker);
