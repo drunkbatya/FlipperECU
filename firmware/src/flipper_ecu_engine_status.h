@@ -23,6 +23,7 @@ typedef struct {
     double ve;
     double air_mass;
     double manifold_pressure;
+    uint16_t afterstart_enrichment_counter;
     EngineMode mode;
 } FlipperECUEngineStatus;
 

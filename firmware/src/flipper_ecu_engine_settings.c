@@ -41,6 +41,18 @@ FlipperECUEngineSettings* flipper_ecu_engine_settings_alloc(void) {
     flipper_ecu_map_set_names_2d(set->maps[IGN_ANGLE_IDLE], "Ign angle idle", "rpm", "angle");
     flipper_ecu_map_set_ranges(set->maps[IGN_ANGLE_IDLE], -15, 55);
 
+    // injection afterstart enrichment
+    set->maps[INJ_AFTERSTART_ENRICHMENT] = flipper_ecu_map_create_alloc_2d(16);
+    flipper_ecu_map_set_names_2d(
+        set->maps[INJ_AFTERSTART_ENRICHMENT], "Inj afterstart enrichment", "Temp C", "%");
+    flipper_ecu_map_set_ranges(set->maps[INJ_AFTERSTART_ENRICHMENT], 0, 1800);
+
+    // injection warmup enrichment
+    set->maps[INJ_WARMUP_ENRICHMENT] = flipper_ecu_map_create_alloc_2d(16);
+    flipper_ecu_map_set_names_2d(
+        set->maps[INJ_WARMUP_ENRICHMENT], "Inj warmup enrichment", "temp C", "%");
+    flipper_ecu_map_set_ranges(set->maps[INJ_WARMUP_ENRICHMENT], 0, 1800);
+
     return set;
 }
 
@@ -52,6 +64,8 @@ void flipper_ecu_engine_settings_free(FlipperECUEngineSettings* set) {
     flipper_ecu_map_free(set->maps[VE]);
     flipper_ecu_map_free(set->maps[IGN_ANGLE_CRANKING]);
     flipper_ecu_map_free(set->maps[IGN_ANGLE_IDLE]);
+    flipper_ecu_map_free(set->maps[INJ_AFTERSTART_ENRICHMENT]);
+    flipper_ecu_map_free(set->maps[INJ_WARMUP_ENRICHMENT]);
     free(set);
 }
 
@@ -59,7 +73,7 @@ void flipper_ecu_engine_settings_free(FlipperECUEngineSettings* set) {
 //furi_string_cat_printf(set->file_path, "/%s%s", "fuckyou", ENGINE_SETTINGS_FILE_EXT);
 void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
     // debug 2D map
-    const int16_t test_data[16] = {15, 16, 17, 18, 19, 20, 30, 30, 18, 29, 28, 27, 10, 9, 13, 20};
+    const int16_t test_data[16] = {30, 30, 30, 30, 30, 30, 30, 30, 30, 29, 28, 27, 26, 28, 28, 30};
     const int16_t test_keys[16] = {
         600, 720, 840, 990, 1170, 1380, 1650, 1950, 2310, 2730, 3210, 3840, 4530, 5370, 6360, 7500};
     flipper_ecu_map_set_keys_x(set->maps[IGN_MAP], test_keys);
@@ -127,7 +141,7 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
 
     // ignition angle cranking
     const int16_t ign_angle_cranking_values[16] = {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, 6, 8, 10, 10, 10};
+        10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10};
     const int16_t ign_angle_cranking_keys[16] = {
         200, 240, 280, 320, 360, 400, 440, 480, 520, 560, 600, 640, 680, 720, 760, 800};
     flipper_ecu_map_set_keys_x(set->maps[IGN_ANGLE_CRANKING], ign_angle_cranking_keys);
@@ -135,11 +149,29 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
 
     // ignition angle idle
     const int16_t ign_angle_idle_values[16] = {
-        10, 10, 10, 10, 10, 10, 12, 14, 20, 25, 27, 28, 28, 28, 28, 28};
+        25, 25, 25, 25, 25, 25, 27, 28, 36, 40, 43, 45, 45, 45, 45, 45};
     const int16_t ign_angle_idle_keys[16] = {
         600, 720, 840, 990, 1170, 1380, 1650, 1950, 2310, 2730, 3210, 3840, 4530, 5370, 6360, 7500};
     flipper_ecu_map_set_keys_x(set->maps[IGN_ANGLE_IDLE], ign_angle_idle_keys);
     flipper_ecu_map_set_values_2d(set->maps[IGN_ANGLE_IDLE], ign_angle_idle_values);
+
+    // injection afterstart enrichment
+    const int16_t inj_afterstart_enrichment_values[16] = {
+        453, 406, 383, 352, 328, 313, 305, 289, 281, 266, 258, 242, 234, 219, 211, 203};
+    const int16_t inj_afterstart_enrichment_keys[16] = {
+        -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120};
+    flipper_ecu_map_set_keys_x(
+        set->maps[INJ_AFTERSTART_ENRICHMENT], inj_afterstart_enrichment_keys);
+    flipper_ecu_map_set_values_2d(
+        set->maps[INJ_AFTERSTART_ENRICHMENT], inj_afterstart_enrichment_values);
+
+    // injection warmup enrichment
+    const int16_t inj_warmup_enrichment_values[16] = {
+        534, 483, 423, 359, 282, 227, 188, 119, 78, 47, 23, 0, 0, 0, 0, 0};
+    const int16_t inj_warmup_enrichment_keys[16] = {
+        -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120};
+    flipper_ecu_map_set_keys_x(set->maps[INJ_WARMUP_ENRICHMENT], inj_warmup_enrichment_keys);
+    flipper_ecu_map_set_values_2d(set->maps[INJ_WARMUP_ENRICHMENT], inj_warmup_enrichment_values);
 
     // maps end
 
@@ -153,7 +185,9 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
 
     set->idle_tps_value = 0; // %
 
-    set->idle_valve_position_on_ignition_on = 40;
+    set->idle_valve_position_on_ignition_on = 70;
 
     set->cranking_end_rpm = 500;
+
+    set->afterstart_enrichment_rotations = 160;
 }

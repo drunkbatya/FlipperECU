@@ -1,6 +1,7 @@
 #pragma once
 
 #include "flipper_ecu_sync_worker.h"
+#include "flipper_ecu_sync_worker_injection.h"
 
 #define GPIO_EVENTS_MAX_PER_CHANNEL 8
 
@@ -39,6 +40,7 @@ struct FlipperECUSyncWorker {
     uint32_t previous_period;
     uint32_t temp;
     uint32_t ckps_timer_overflows;
+    uint16_t afterstart_enrichment_counter;
     bool synced;
 };
 

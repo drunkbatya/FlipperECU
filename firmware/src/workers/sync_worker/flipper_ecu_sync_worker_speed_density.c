@@ -50,12 +50,5 @@ double flipper_ecu_sync_worker_speed_density_get_inj_time(FlipperECUSyncWorker* 
     worker->engine_status->air_mass = air_mass;
     double inj_time = air_mass / afr / ((double)1 / worker->engine_settings->inj_flow);
 
-    if(inj_time < (double)1.0) {
-        inj_time = 1;
-    }
-    if(inj_time > (double)50.0) {
-        inj_time = 50;
-    }
-
     return inj_time;
 }

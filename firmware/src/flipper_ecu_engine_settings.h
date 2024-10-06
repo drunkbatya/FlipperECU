@@ -14,6 +14,8 @@ typedef enum {
     IGN_ANGLE_CRANKING,
     IGN_ANGLE_IDLE,
     VE,
+    INJ_AFTERSTART_ENRICHMENT,
+    INJ_WARMUP_ENRICHMENT,
     IGN_MAP,
     MAP_COUNT
 } FlipperECUEngineSettingsMaps;
@@ -27,6 +29,7 @@ typedef struct {
 
     // constants
     double idle_tps_value;
+    uint16_t afterstart_enrichment_rotations;
 
     // injectors
     double inj_flow;

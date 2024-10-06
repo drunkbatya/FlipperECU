@@ -164,6 +164,12 @@ static void flipper_ecu_view_dashboard_draw_page3(
         flipper_ecu_engine_status_get_mode_name(view_dashboard_model->engine_status));
     canvas_draw_str(canvas, 0, 50, furi_string_get_cstr(fstr));
 
+    furi_string_printf(
+        fstr,
+        "Afterstart Enrich Count: %d",
+        view_dashboard_model->engine_status->afterstart_enrichment_counter);
+    canvas_draw_str(canvas, 0, 60, furi_string_get_cstr(fstr));
+
     furi_string_free(fstr);
 }
 

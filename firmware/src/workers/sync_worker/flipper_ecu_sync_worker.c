@@ -124,24 +124,40 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     if((rpm < worker->engine_settings->cranking_end_rpm) &&
        (worker->engine_status->mode <= EngineModeCranking)) { // cranking
         worker->engine_status->mode = EngineModeCranking;
-        ign_angle =
-            flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_CRANKING], rpm);
+        //ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
+        ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
         inj_time = flipper_ecu_map_interpolate_2d(
                        worker->engine_settings->maps[INJ_PULSE_WIDTH_CRANKING], water_temp) /
                    (double)10;
         worker->engine_status->inj_time = inj_time;
+        inj_time /= (double)2; // semi-sequental squirt
     } else if(tps_value <= worker->engine_settings->idle_tps_value) { // idle
+        if((worker->engine_status->mode == EngineModeCranking) &&
+           worker->afterstart_enrichment_counter == 0) {
+            worker->afterstart_enrichment_counter =
+                worker->engine_settings->afterstart_enrichment_rotations;
+        }
         worker->engine_status->mode = EngineModeIdle;
-        ign_angle =
-            flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_IDLE], rpm);
+        ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
+        //ign_angle =
+        //    flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_ANGLE_IDLE], rpm);
         inj_time = flipper_ecu_sync_worker_speed_density_get_inj_time(worker);
+        //inj_time *= flipper_ecu_sync_worker_injection_get_afterstart_enrichment_multiplyer(worker);
+        inj_time *= flipper_ecu_sync_worker_injection_get_warmup_enrichment_multiplyer(worker);
         worker->engine_status->inj_time = inj_time;
         inj_time /= (double)2; // semi-sequental squirt
         //
     } else { // work
+        if((worker->engine_status->mode == EngineModeCranking) &&
+           worker->afterstart_enrichment_counter == 0) {
+            worker->afterstart_enrichment_counter =
+                worker->engine_settings->afterstart_enrichment_rotations;
+        }
         worker->engine_status->mode = EngineModeWorking;
         ign_angle = flipper_ecu_map_interpolate_2d(worker->engine_settings->maps[IGN_MAP], rpm);
         inj_time = flipper_ecu_sync_worker_speed_density_get_inj_time(worker);
+        //inj_time *= flipper_ecu_sync_worker_injection_get_afterstart_enrichment_multiplyer(worker);
+        inj_time *= flipper_ecu_sync_worker_injection_get_warmup_enrichment_multiplyer(worker);
         worker->engine_status->inj_time = inj_time;
         //inj_time = calc_inj_time_tps_test(worker);
         inj_time /= (double)2; // semi-sequental squirt
@@ -152,6 +168,9 @@ static inline void flipper_ecu_sync_worker_make_predictions(FlipperECUSyncWorker
     if(inj_time > (double)40.0) {
         inj_time = (double)40.0;
     }
+
+    //inj_time = 4.0;
+    //ign_angle = 35;
 
     worker->engine_status->ign_angle = ign_angle;
     inj_time_ticks = ms_to_ticks_double(inj_time);
@@ -504,6 +523,9 @@ FlipperECUSyncWorker* flipper_ecu_sync_worker_alloc(
     worker->engine_status->synced = false;
     worker->engine_status->rpm = 0;
     worker->engine_status->ign_angle = 0;
+
+    worker->afterstart_enrichment_counter =
+        worker->engine_settings->afterstart_enrichment_rotations;
 
     furi_delay_tick(2);
 
