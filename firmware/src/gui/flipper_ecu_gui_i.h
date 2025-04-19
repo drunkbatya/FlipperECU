@@ -21,7 +21,6 @@
 #define FLIPPER_ECU_TEXT_BUFFER_SIZE 100
 
 struct FlipperECUGui {
-    FuriThread* thread;
     FlipperECUApp* ecu_app;
     ViewDispatcher* view_dispatcher;
     Gui* gui;

@@ -197,24 +197,20 @@ static void flipper_ecu_adc_worker_adc_init(FlipperECUAdcWorker* worker) {
     LL_ADC_EnableInternalRegulator(ADC1);
 
     timer = furi_hal_cortex_timer_get(LL_ADC_DELAY_INTERNAL_REGUL_STAB_US);
-    while(!furi_hal_cortex_timer_is_expired(timer))
-        ;
+    while(!furi_hal_cortex_timer_is_expired(timer));
 
     // Run ADC self calibration
     LL_ADC_StartCalibration(ADC1, LL_ADC_SINGLE_ENDED);
     // Poll for ADC effectively calibrated
-    while(LL_ADC_IsCalibrationOnGoing(ADC1) != 0)
-        ;
+    while(LL_ADC_IsCalibrationOnGoing(ADC1) != 0);
     // Delay between ADC end of calibration and ADC enable
     const size_t end = DWT->CYCCNT + LL_ADC_DELAY_CALIB_ENABLE_ADC_CYCLES;
-    while(DWT->CYCCNT < end)
-        ;
+    while(DWT->CYCCNT < end);
 
     // Enable ADC
     LL_ADC_ClearFlag_ADRDY(ADC1);
     LL_ADC_Enable(ADC1);
-    while(!LL_ADC_IsActiveFlag_ADRDY(ADC1))
-        ;
+    while(!LL_ADC_IsActiveFlag_ADRDY(ADC1));
 
     LL_ADC_REG_StartConversion(ADC1);
     FURI_LOG_I(TAG, "ADC configured");

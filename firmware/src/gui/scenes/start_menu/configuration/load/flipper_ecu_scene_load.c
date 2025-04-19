@@ -15,7 +15,7 @@ void flipper_ecu_scene_load_on_enter(void* context) {
     bool success =
         dialog_file_browser_show(app->dialogs, app->file_path, app->file_path, &browser_options);
     if(success) {
-        if(flipper_ecu_files_load(app->ecu_app)) {
+        if(flipper_ecu_files_load(app->ecu_app, app)) {
             scene_manager_next_scene(app->scene_manager, FlipperECUSceneSuccess);
         } else {
             dialog_message_show_storage_error(app->dialogs, "Cannot load\nfile");

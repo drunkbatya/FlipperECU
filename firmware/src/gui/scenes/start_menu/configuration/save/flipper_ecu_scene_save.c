@@ -45,7 +45,7 @@ bool flipper_ecu_scene_save_on_event(void* context, SceneManagerEvent event) {
     if(event.type == SceneManagerEventTypeCustom) {
         success = true;
         if(event.event == FlipperECUGuiCustomEventTextEditResult) {
-            if(flipper_ecu_files_save(app->ecu_app)) {
+            if(flipper_ecu_files_save(app->ecu_app, app)) {
                 scene_manager_next_scene(app->scene_manager, FlipperECUSceneSuccess);
             } else {
                 dialog_message_show_storage_error(app->dialogs, "Cannot save\nfile");

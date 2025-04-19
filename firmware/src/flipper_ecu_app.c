@@ -15,7 +15,10 @@ static FlipperECUApp* flipper_ecu_app_alloc(void) {
     app->idle_valve_worker =
         flipper_ecu_idle_valve_worker_alloc(app, app->engine_settings, &app->engine_status);
 
-    app->gui = flipper_ecu_gui_alloc(app);
+    // need to alloc gui thread in main thread for proper event loop work
+    // because of a lot of `furi_check(instance->thread_id == furi_thread_get_current_id());`
+    // in `flipperzero-firmware/furi/core/event_loop.c`
+    app->gui_thread = furi_thread_alloc_ex("FlipperECUGui", 2048, flipper_ecu_gui_thread, app);
     return app;
 }
 
@@ -28,7 +31,7 @@ static void flipper_ecu_app_free(FlipperECUApp* app) {
 
     flipper_ecu_engine_settings_free(app->engine_settings);
 
-    flipper_ecu_gui_free(app->gui);
+    furi_thread_free(app->gui_thread);
     free(app);
 }
 
@@ -37,18 +40,17 @@ int32_t flipper_ecu_app(void* p) {
 
     FlipperECUApp* app = flipper_ecu_app_alloc();
 
-    flipper_ecu_gui_start(app->gui);
+    furi_thread_start(app->gui_thread);
     flipper_ecu_adc_worker_start(app->adc_worker);
     // sync worker must be started after adc worker's first measurement
-    while(!flipper_ecu_adc_worker_first_measurement_done(app->adc_worker))
-        ;
+    while(!flipper_ecu_adc_worker_first_measurement_done(app->adc_worker));
     ;
     flipper_ecu_fuel_pump_worker_start(app->fuel_pump_worker);
     furi_delay_tick(10);
     flipper_ecu_sync_worker_start(app->sync_worker);
     flipper_ecu_idle_valve_worker_start(app->idle_valve_worker);
 
-    flipper_ecu_gui_await_stop(app->gui);
+    furi_thread_join(app->gui_thread);
 
     flipper_ecu_sync_worker_send_stop(app->sync_worker);
     flipper_ecu_sync_worker_await_stop(app->sync_worker);

@@ -21,17 +21,8 @@ static void flipper_ecu_gui_tick_event_callback(void* context) {
     scene_manager_handle_tick_event(app->scene_manager);
 }
 
-static int32_t flipper_ecu_gui_thread(void* arg) {
-    FlipperECUGui* app = arg;
-    FURI_LOG_I(TAG, "thread started");
-    view_dispatcher_run(app->view_dispatcher);
-    FURI_LOG_I(TAG, "thread stopped");
-    return 0;
-}
-
-FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
+static FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
     FlipperECUGui* app = malloc(sizeof(FlipperECUGui));
-    app->thread = furi_thread_alloc_ex(TAG, 1024, flipper_ecu_gui_thread, app);
 
     app->gui = furi_record_open(RECORD_GUI);
     app->scene_manager = scene_manager_alloc(&flipper_ecu_scene_handlers, app);
@@ -50,8 +41,6 @@ FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
     app->view_sensor_config = flipper_ecu_view_sensor_config_alloc();
     app->view_idle_manual = flipper_ecu_view_idle_manual_alloc(ecu_app);
 
-    view_dispatcher_enable_queue(app->view_dispatcher);
-
     view_dispatcher_set_event_callback_context(app->view_dispatcher, app);
     view_dispatcher_set_custom_event_callback(
         app->view_dispatcher, flipper_ecu_gui_custom_event_callback);
@@ -59,8 +48,8 @@ FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
         app->view_dispatcher, flipper_ecu_gui_back_event_callback);
     view_dispatcher_set_tick_event_callback(
         app->view_dispatcher, flipper_ecu_gui_tick_event_callback, FLIPPER_ECU_GUI_TICK);
-
     view_dispatcher_attach_to_gui(app->view_dispatcher, app->gui, ViewDispatcherTypeFullscreen);
+
     view_dispatcher_add_view(
         app->view_dispatcher, FlipperECUGuiViewSubmenu, submenu_get_view(app->submenu));
     view_dispatcher_add_view(
@@ -102,7 +91,7 @@ FlipperECUGui* flipper_ecu_gui_alloc(FlipperECUApp* ecu_app) {
     return app;
 }
 
-void flipper_ecu_gui_free(FlipperECUGui* app) {
+static void flipper_ecu_gui_free(FlipperECUGui* app) {
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewDashboard);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewMapEditor3DGrid);
     view_dispatcher_remove_view(app->view_dispatcher, FlipperECUGuiViewMapEditor);
@@ -129,17 +118,18 @@ void flipper_ecu_gui_free(FlipperECUGui* app) {
 
     view_dispatcher_free(app->view_dispatcher);
     scene_manager_free(app->scene_manager);
-    furi_thread_free(app->thread);
 
     furi_record_close(RECORD_DIALOGS);
     furi_record_close(RECORD_GUI);
     free(app);
 }
 
-void flipper_ecu_gui_start(FlipperECUGui* app) {
-    furi_thread_start(app->thread);
-}
-
-void flipper_ecu_gui_await_stop(FlipperECUGui* app) {
-    furi_thread_join(app->thread);
+int32_t flipper_ecu_gui_thread(void* arg) {
+    FlipperECUApp* app = arg;
+    FlipperECUGui* gui = flipper_ecu_gui_alloc(app);
+    FURI_LOG_I(TAG, "thread started");
+    view_dispatcher_run(gui->view_dispatcher);
+    FURI_LOG_I(TAG, "thread stopped");
+    flipper_ecu_gui_free(gui);
+    return 0;
 }

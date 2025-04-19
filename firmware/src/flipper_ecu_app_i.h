@@ -6,7 +6,7 @@
 #include "flipper_ecu_engine_status.h"
 
 struct FlipperECUApp {
-    FlipperECUGui* gui;
+    FuriThread* gui_thread;
     FlipperECUSyncWorker* sync_worker;
     FlipperECUAdcWorker* adc_worker;
     FlipperECUFuelPumpWorker* fuel_pump_worker;
