@@ -31,14 +31,18 @@ Schematic developed by [me](https://github.com/drunkbatya) and inspired by [micr
 <picture>
     <img
         alt="board ird"
-        src="/.github/assets/board_irl_1.png">
+        src="/.github/assets/board_irl_1.png"
+        width="480"
+    >
 </picture>
 
 ### Board testing
 <picture>
     <img
         alt="board testing"
-        src="/.github/assets/board_testing_1.png">
+        src="/.github/assets/board_testing_1.png"
+        width="480"
+    >
 </picture>
 
 ## Software
