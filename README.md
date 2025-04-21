@@ -14,4 +14,38 @@ As a result of the initial goal, this project stuck at the PoC state right after
 
 This project consists of expansion module (schematic, gerber etc.) and FAP (Flipper App Package) sources available in [hardware](hardware/) and [firmware](firmware/) directories respectively.
 
-TODO: add a photos and GIFs
+## Expansion module
+
+Schematic developed by [me](https://github.com/drunkbatya) and inspired by [microRusEfi hardware](https://github.com/rusefi/hw_microRusEfi). PCB completely developed by [AlexKaut](https://github.com/AlexKaut).
+
+### EasyEDA render
+<picture>
+    <img
+        alt="expansion module easyeda"
+        src="/.github/assets/board_easyeda_2.png">
+</picture>
+
+### Board IRL
+<picture>
+    <img
+        alt="board ird"
+        src="/.github/assets/board_irl_1.png">
+</picture>
+
+### Board testing
+<picture>
+    <img
+        alt="board testing"
+        src="/.github/assets/board_testing_1.png">
+</picture>
+
+## Software
+
+Software developed by [me](https://github.com/drunkbatya) and inspired by [rusefi firmware](https://github.com/rusefi/rusefi) (guys, you're awesome!) and [Flipper Zero firmware](https://github.com/flipperdevices/flipperzero-firmware).
+
+### App overview
+<picture>
+    <img
+        alt="app overview"
+        src="/.github/assets/gif_app_basic.gif">
+</picture>

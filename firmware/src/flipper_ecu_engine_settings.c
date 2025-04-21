@@ -200,9 +200,9 @@ void flipper_ecu_engine_settings_load_d(FlipperECUEngineSettings* set) {
 
     set->idle_tps_value = 0; // %
 
-    set->idle_valve_position_on_ignition_on = 150;
+    set->idle_valve_position_on_ignition_on = 250;
 
     set->cranking_end_rpm = 500;
 
-    set->afterstart_enrichment_rotations = 160;
+    set->afterstart_enrichment_rotations = 20;
 }
