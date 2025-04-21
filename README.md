@@ -22,7 +22,9 @@ Schematic developed by [me](https://github.com/drunkbatya) and inspired by [micr
 <picture>
     <img
         alt="expansion module easyeda"
-        src="/.github/assets/board_easyeda_2.png">
+        src="/.github/assets/board_easyeda_2.png"
+        width="480"
+    >
 </picture>
 
 ### Board IRL
