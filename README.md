@@ -53,26 +53,26 @@ Software developed by [me](https://github.com/drunkbatya) and inspired by [rusef
 <picture>
     <img
         alt="app overview"
-        src="/.github/assets/gif_app_basic.gif">
+        src="/.github/assets/gif_app_basic_1.gif">
 </picture>
 
 ### Map editor [2D]
 <picture>
     <img
         alt="app overview"
-        src="/.github/assets/gif_map_editor_2d.gif">
+        src="/.github/assets/gif_map_editor_2d_1.gif">
 </picture>
 
 ### Map editor [3D]
 <picture>
     <img
         alt="app overview"
-        src="/.github/assets/gif_map_editor_3d.gif">
+        src="/.github/assets/gif_map_editor_3d_1.gif">
 </picture>
 
 ### Map editor [3D grid]
 <picture>
     <img
         alt="app overview"
-        src="/.github/assets/gif_map_editor_3d_grid.gif">
+        src="/.github/assets/gif_map_editor_3d_grid_1.gif">
 </picture>
